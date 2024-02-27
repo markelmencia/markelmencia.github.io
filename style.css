@@ -1,1 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap');
 
+#name {
+	font-family: "Lexend";
+	font-size: 92px;
+	margin: 0px;
+	padding: 0px;
+	position: absolute;
+	bottom: 0;
+	margin-left: 50px;
+	margin-bottom: 75px;
+	line-height: 85px;
+}
+
+#logo {
+	width: 400px;
+	float: right;
+	margin-right: 30px;
+}
