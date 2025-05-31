@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <!-- Minima -->
+  <!-- Hexo theme created by @adisaktijrs -->
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+
+  
+  <title>Break The Syntax 2025: crypto/roulette</title>
+  
+  <link rel="canonical" href="https://markelmencia.github.io/2025/05/31/crypto_roulette_writeup/">
+  
+  <meta name="description" content="Break The Syntax CTF 2025: crypto&amp;#x2F;roulette#crypto #brute-force #hash #breakthesyntax #bts OverviewThis challenge simulates a “Provably Fair Roule">
+  
+  
+  <meta name="keywords" content="markelmencia, cybersecurity">
+  
+  <meta name="author" content="Markel Mencía">
+  
+  
+  
+  <meta property="og:site_name" content="Markel Mencía" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Break The Syntax 2025: crypto/roulette" />
+  
+  <meta property="og:description" content="Break The Syntax CTF 2025: crypto&amp;#x2F;roulette#crypto #brute-force #hash #breakthesyntax #bts OverviewThis challenge simulates a “Provably Fair Roule">
+  
+  <meta property="og:url" content="https://markelmencia.github.io/2025/05/31/crypto_roulette_writeup/" />
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Break The Syntax 2025: crypto/roulette">
+  
+  <meta name="twitter:description" content="Break The Syntax CTF 2025: crypto&amp;#x2F;roulette#crypto #brute-force #hash #breakthesyntax #bts OverviewThis challenge simulates a “Provably Fair Roule">
+  
+  
+  
+  
+  <meta name="twitter:url" content="https://markelmencia.github.io/2025/05/31/crypto_roulette_writeup/" />
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Preload fonts
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="preload" href="/fonts/dm-serif-display-v4-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/inter-v2-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  
+<link rel="stylesheet" href="/css/normalize.css">
+
+  
+<link rel="stylesheet" href="/css/skeleton.css">
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+  
+<link rel="stylesheet" href="/css/prism-dark.css">
+
+  
+<link rel="stylesheet" href="/css/prism-line-numbers.css">
+
+  <!-- User css -->
+  
+  
+<link rel="stylesheet" href="/css/user.css">
+
+  
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="/images/favicon.webp">
+
+  <!-- Custom Theme Color Style
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <style>
+  a:not(.icon) {
+    text-decoration-color: #FFD270;
+    background-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 50%,
+      #FFD270 50%
+    );
+  }
+  blockquote {
+    border-left: 8px solid #FFD270;
+  }
+  .nanobar .bar {
+    background: #FFD270;
+  }
+  .button.button-primary:hover,
+  button.button-primary:hover,
+  input[type="submit"].button-primary:hover,
+  input[type="reset"].button-primary:hover,
+  input[type="button"].button-primary:hover,
+  .button.button-primary:focus,
+  button.button-primary:focus,
+  input[type="submit"].button-primary:focus,
+  input[type="reset"].button-primary:focus,
+  input[type="button"].button-primary:focus {
+    background-color: #FFD270;
+    border-color: #FFD270;
+  }
+  input[type="email"]:focus,
+  input[type="number"]:focus,
+  input[type="search"]:focus,
+  input[type="text"]:focus,
+  input[type="tel"]:focus,
+  input[type="url"]:focus,
+  input[type="password"]:focus,
+  textarea:focus,
+  select:focus {
+    border: 1px solid #FFD270;
+  }
+</style>
+
+  <!-- Google Analytics (With Privacy Settings On)
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  
+
+  
+  <script src="/js/pic.min.js" defer></script>
+  
+ <!--
+ 
+ -->
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div>
+
+        <div class="row">
+  <div class="ejemplo" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%;">
+    <!-- Logo and title group on the left -->
+    <div style="display: flex; flex-direction: row; align-items: center;">
+      <!-- Logo -->
+      <div style="height: 100%; max-width: 50px; display: flex; align-items: center;">
+          <img src="/images/favicon.webp" id="siteLogo" style="height: 100%; aspect-ratio: 1/1; box-shadow: 0 0 0 !important" />
+      </div>
+      <!-- Title closer to the logo -->
+      <div style="margin-left: 15px;">
+        <h1 style="margin-bottom: 0px !important;">
+          Markel Mencía
+        </h1>
+      </div>
+    </div>
+    
+    <!-- Dark/Light toggle pushed to the right -->
+    <div style="margin-left: auto;">
+      <h1 style="margin-bottom: 0px !important;">
+        <div onclick=setDarkMode(true) id="darkBtn" style="display: inline-block; cursor: pointer;">🌑</div>
+        <div onclick=setDarkMode(false) id="lightBtn" class=hidden style="display: none; cursor: pointer;">☀️</div>
+      </h1>
+    </div>
+  </div>
+ </div>
+  
+  <!-- Navigation row -->
+  <div class="twelve columns" style="margin-top: 5px;">
+    <div class="row">
+      <div class="nine columns left">
+        <a href="/">Home</a>
+        
+          
+            <a href="/writeups" class="ml">Writeups</a>
+          
+        
+        
+      </div>
+    </div>
+    <hr style="margin-top: 13px !important">
+  </div>
+ </div>
+ 
+ <script>
+  if (localStorage.getItem('preferredTheme') == 'dark') {
+    setDarkMode(true)
+  }
+  function setDarkMode(isDark) {
+    var darkBtn = document.getElementById('darkBtn')
+    var lightBtn = document.getElementById('lightBtn')
+    if (isDark) {
+      lightBtn.style.display = "block"
+      darkBtn.style.display = "none"
+      localStorage.setItem('preferredTheme', 'dark');
+    } else {
+      lightBtn.style.display = "none"
+      darkBtn.style.display = "block"
+      localStorage.removeItem('preferredTheme');
+    }
+    document.body.classList.toggle("darkmode");
+  }
+ </script>
+        <div class="trans">
+            <h2>Break The Syntax 2025: crypto/roulette</h2>
+
+  <h1 id="Break-The-Syntax-CTF-2025-crypto-roulette"><a href="#Break-The-Syntax-CTF-2025-crypto-roulette" class="headerlink" title="Break The Syntax CTF 2025: crypto&#x2F;roulette"></a>Break The Syntax CTF 2025: crypto&#x2F;roulette</h1><p>#crypto #brute-force #hash #breakthesyntax #bts</p>
+<h2 id="Overview"><a href="#Overview" class="headerlink" title="Overview"></a>Overview</h2><p>This challenge simulates a “Provably Fair Roulette”. In order to interact with the challenge we have to connect to the server that runs it. To get the flag, according to the given description, <strong>we must get the number 13 a total of 37 times in a row</strong>. To do so, we are given the code that runs in the server.</p>
+<h2 id="Objective"><a href="#Objective" class="headerlink" title="Objective"></a>Objective</h2><p>Somehow manipulate our interaction with the server to <strong>hardcode the number 13 as the resulting number</strong> of the roulette.</p>
+<h2 id="Writeup"><a href="#Writeup" class="headerlink" title="Writeup"></a>Writeup</h2><h3 id="The-server"><a href="#The-server" class="headerlink" title="The server"></a>The server</h3><p>Let’s look at the <strong>Python script</strong> that runs in the server, to see how the winner number is generated:</p>
+<pre class="language-python" data-language="python"><code class="language-python"><span class="token keyword">from</span> hashlib <span class="token keyword">import</span> sha256
+<span class="token keyword">import</span> secrets
+
+
+<span class="token keyword">def</span> <span class="token function">get_color</span><span class="token punctuation">(</span>number<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token triple-quoted-string string">"""Determine roulette color for a given number"""</span>
+    <span class="token keyword">if</span> number <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">:</span>
+        <span class="token keyword">return</span> <span class="token string">'green'</span>
+    <span class="token keyword">return</span> <span class="token string">'red'</span> <span class="token keyword">if</span> number <span class="token operator">%</span> <span class="token number">2</span> <span class="token operator">==</span> <span class="token number">1</span> <span class="token keyword">else</span> <span class="token string">'black'</span>
+
+<span class="token keyword">def</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Welcome to Provably Fair Roulette!"</span><span class="token punctuation">)</span>
+    
+    <span class="token keyword">with</span> <span class="token builtin">open</span><span class="token punctuation">(</span><span class="token string">'flag'</span><span class="token punctuation">,</span> <span class="token string">'rt'</span><span class="token punctuation">)</span> <span class="token keyword">as</span> f<span class="token punctuation">:</span>
+        FLAG <span class="token operator">=</span> f<span class="token punctuation">.</span>read<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        
+    streak_13 <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+        <span class="token comment"># Generate server seed and its hash</span>
+        server_seed <span class="token operator">=</span> sha256<span class="token punctuation">(</span><span class="token builtin">bytes</span><span class="token punctuation">(</span>secrets<span class="token punctuation">.</span>randbits<span class="token punctuation">(</span><span class="token number">17</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        server_seed_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>server_seed<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        
+	    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Server seed hash (verify later): </span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_seed_hash<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+        <span class="token comment"># Get client seed</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Enter your client seed (press enter to generate): "</span><span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token string">""</span><span class="token punctuation">)</span>
+        client_seed <span class="token operator">=</span> <span class="token builtin">input</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>strip<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">if</span> <span class="token keyword">not</span> client_seed<span class="token punctuation">:</span>
+            client_seed <span class="token operator">=</span> secrets<span class="token punctuation">.</span>token_bytes<span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">hex</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Generated client seed: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>client_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+            
+        <span class="token comment"># Generate game hash</span>
+        combined <span class="token operator">=</span> <span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_seed<span class="token punctuation">&#125;</span></span><span class="token string">:</span><span class="token interpolation"><span class="token punctuation">&#123;</span>client_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span>
+        game_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>combined<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        hash_int <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span>game_hash<span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span>
+        
+        <span class="token comment"># Calculate roulette result</span>
+        roulette_number <span class="token operator">=</span> hash_int <span class="token operator">%</span> <span class="token number">37</span>  <span class="token comment"># 0-36</span>
+        roulette_color <span class="token operator">=</span> get_color<span class="token punctuation">(</span>roulette_number<span class="token punctuation">)</span>
+		
+	    <span class="token comment"># Get user's bet</span>
+        <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Place your bet (number 0-36 or color red/black/green): "</span><span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token string">""</span><span class="token punctuation">)</span>
+            bet <span class="token operator">=</span> <span class="token builtin">input</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>strip<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>lower<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            <span class="token keyword">if</span> bet <span class="token keyword">in</span> <span class="token punctuation">[</span><span class="token string">'green'</span><span class="token punctuation">,</span> <span class="token string">'red'</span><span class="token punctuation">,</span> <span class="token string">'black'</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+                <span class="token keyword">break</span>
+            <span class="token keyword">try</span><span class="token punctuation">:</span>
+                num <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span>bet<span class="token punctuation">)</span>
+                <span class="token keyword">if</span> <span class="token number">0</span> <span class="token operator">&lt;=</span> num <span class="token operator">&lt;=</span> <span class="token number">36</span><span class="token punctuation">:</span>
+                    bet <span class="token operator">=</span> <span class="token builtin">str</span><span class="token punctuation">(</span>num<span class="token punctuation">)</span>  <span class="token comment"># Standardize to string for comparison</span>
+                    <span class="token keyword">break</span>
+                <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Number must be between 0-36"</span><span class="token punctuation">)</span>
+            <span class="token keyword">except</span> ValueError<span class="token punctuation">:</span>
+                <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Invalid bet. Enter number (0-36) or color (red/black/green)"</span>
+        
+        <span class="token comment"># Determine result</span>
+        result_str <span class="token operator">=</span> <span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">&#123;</span>roulette_number<span class="token punctuation">&#125;</span></span><span class="token string"> (</span><span class="token interpolation"><span class="token punctuation">&#123;</span>roulette_color<span class="token punctuation">&#125;</span></span><span class="token string">)"</span></span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"\nThe wheel lands on: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>result_str<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+        
+        <span class="token comment"># Check win conditions</span>
+        win <span class="token operator">=</span> <span class="token boolean">False</span>
+        <span class="token keyword">if</span> bet<span class="token punctuation">.</span>isdigit<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+            win <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span>bet<span class="token punctuation">)</span> <span class="token operator">==</span> roulette_number
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            win <span class="token operator">=</span> bet <span class="token operator">==</span> roulette_color
+		   
+        <span class="token keyword">if</span> win<span class="token punctuation">:</span>
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Congratulations! You win! "</span><span class="token punctuation">)</span>
+            <span class="token keyword">if</span> roulette_number <span class="token operator">==</span> <span class="token number">13</span><span class="token punctuation">:</span>
+                <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"...and you got 13, double congratulations!"</span><span class="token punctuation">)</span>
+                streak_13 <span class="token operator">+=</span> <span class="token number">1</span>
+            <span class="token keyword">else</span><span class="token punctuation">:</span>
+                <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"But it's not 13, no streak for you"</span><span class="token punctuation">)</span>
+                streak_13 <span class="token operator">=</span> <span class="token number">0</span>
+        <span class="token keyword">else</span><span class="token punctuation">:</span>
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Sorry, you lose!"</span><span class="token punctuation">)</span>
+            streak_13 <span class="token operator">=</span> <span class="token number">0</span>
+	    
+		<span class="token comment"># Verification information</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Verification Details:"</span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Server seed: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Client seed: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>client_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Combined string: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>combined<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Game hash: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>game_hash<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Calculated number: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>roulette_number<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Resulting color: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>roulette_color<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+
+        <span class="token keyword">if</span> streak_13 <span class="token operator">==</span> <span class="token number">37</span><span class="token punctuation">:</span>
+            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"How? How is it possible? What was the chance?! "</span> <span class="token string-interpolation"><span class="token string">f"Anyway, here's your flag, congratulations... </span><span class="token interpolation"><span class="token punctuation">&#123;</span>FLAG<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+            exit<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">"__main__"</span><span class="token punctuation">:</span>
+    main<span class="token punctuation">(</span><span class="token punctuation">)</span></code></pre>
+
+<p>First it generates a server seed, which is just <strong>a random 17-bit long hexadecimal number</strong>. Then it hashes it, it prints it out to us:</p>
+<pre class="language-python" data-language="python"><code class="language-python"><span class="token comment"># Generate server seed and its hash</span>
+server_seed <span class="token operator">=</span> sha256<span class="token punctuation">(</span><span class="token builtin">bytes</span><span class="token punctuation">(</span>secrets<span class="token punctuation">.</span>randbits<span class="token punctuation">(</span><span class="token number">17</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+server_seed_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>server_seed<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Server seed hash (verify later): </span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_seed_hash<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span></code></pre>
+
+<p>Then the server asks us for input. This will be our seed:</p>
+<pre class="language-python" data-language="python"><code class="language-python"><span class="token comment"># Get client seed</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Enter your client seed (press enter to generate): "</span><span class="token punctuation">,</span> end<span class="token operator">=</span><span class="token string">""</span><span class="token punctuation">)</span>
+client_seed <span class="token operator">=</span> <span class="token builtin">input</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>strip<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">if</span> <span class="token keyword">not</span> client_seed<span class="token punctuation">:</span>
+    client_seed <span class="token operator">=</span> secrets<span class="token punctuation">.</span>token_bytes<span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">hex</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Generated client seed: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>client_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span></code></pre>
+
+<p>Here’s the important part: in order to calculate the roulette number, the server seed gets <strong>concatenated</strong> with our seed and then it’s turned into a hash. The hash is parsed into an integer, and once we calculate its module with 37, it will generate a number between 0 and 36, just like in a roulette. The color is also calculated, but we can overlook that as it doesn’t help us get the flag:</p>
+<pre class="language-python" data-language="python"><code class="language-python"><span class="token comment"># Generate game hash</span>
+combined <span class="token operator">=</span> <span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_seed<span class="token punctuation">&#125;</span></span><span class="token string">:</span><span class="token interpolation"><span class="token punctuation">&#123;</span>client_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span>
+game_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>combined<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+hash_int <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span>game_hash<span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span>
+        
+<span class="token comment"># Calculate roulette result</span>
+roulette_number <span class="token operator">=</span> hash_int <span class="token operator">%</span> <span class="token number">37</span>  <span class="token comment"># 0-36</span>
+roulette_color <span class="token operator">=</span> get_color<span class="token punctuation">(</span>roulette_number<span class="token punctuation">)</span></code></pre>
+
+<h3 id="How-it-generates-the-number"><a href="#How-it-generates-the-number" class="headerlink" title="How it generates the number"></a>How it generates the number</h3><p>As we’ve seen, the server will generate a seed and will asks us for another one. Then, it will combine both seeds to generate a random number between 0 and 36. This is pretty much how the server gets the number.</p>
+<h3 id="What-do-we-know"><a href="#What-do-we-know" class="headerlink" title="What do we know?"></a>What do we know?</h3><p>We have a decent amount of data of how the server operates. We know:</p>
+<ul>
+<li>How the server <strong>generates the winning number</strong></li>
+<li>Our <strong>client seed</strong> (since we give it to the server)</li>
+<li>The <strong>hashed server seed</strong>.</li>
+<li>The fact that the <strong>server seed</strong> is a random number of a <strong>fixed size</strong> (17 bits).</li>
+</ul>
+<p>Smell something fishy? With this data we have everything we need to get the flag, let’s see how!</p>
+<h3 id="The-vulnerability"><a href="#The-vulnerability" class="headerlink" title="The vulnerability"></a>The vulnerability</h3><p>Considering that the server allows us to introduce our own seed, all we need to do is provide one that <strong>we know</strong> will generate a 13. But how do we know if a client see will generate a 13? Let’s go back to the server script:</p>
+<pre class="language-python" data-language="python"><code class="language-python"><span class="token comment"># Generate game hash</span>
+combined <span class="token operator">=</span> <span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_seed<span class="token punctuation">&#125;</span></span><span class="token string">:</span><span class="token interpolation"><span class="token punctuation">&#123;</span>client_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span>
+game_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>combined<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+hash_int <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span>game_hash<span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span>
+
+<span class="token comment"># Calculate roulette result</span>
+roulette_number <span class="token operator">=</span> hash_int <span class="token operator">%</span> <span class="token number">37</span>  <span class="token comment"># 0-36</span>
+roulette_color <span class="token operator">=</span> get_color<span class="token punctuation">(</span>roulette_number<span class="token punctuation">)</span></code></pre>
+
+<p>The way the number is generated is by <strong>combining the server and client seed</strong>. This means that if we knew the server seed, we could just <strong>bruteforce</strong> a winning client seed by generating a random client seed, concatenate it with the server seed, and calculating the number it would generate, until we find a seed that does indeed generate a 13. There’s a slight issue though, <strong>we don’t know the server seed</strong>. Or do we?</p>
+<p>The server gives us it server seed hashed. However, we know that the length of the seed is 17 bits, so there’s nothing stopping us from bruteforcing the server seed! All we need to do is to <strong>iterate through every number between 0 and 2¹⁷, generate its hash</strong>, and check if that hash is equal to the server hash the server has given us. That way, we’d get the <strong>seed number</strong>:</p>
+<pre class="language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">get_server_seed</span><span class="token punctuation">(</span>server_seed_hash<span class="token punctuation">)</span><span class="token punctuation">:</span>
+	i <span class="token operator">=</span> <span class="token number">0</span>
+	<span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token builtin">int</span><span class="token punctuation">(</span>math<span class="token punctuation">.</span><span class="token builtin">pow</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">17</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+		potential_server_seed <span class="token operator">=</span> sha256<span class="token punctuation">(</span><span class="token builtin">bytes</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+		potential_server_seed_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>potential_server_seed<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+		<span class="token keyword">if</span> potential_server_seed_hash <span class="token operator">==</span> server_seed_hash<span class="token punctuation">:</span>
+			<span class="token keyword">break</span>
+	
+	server_seed <span class="token operator">=</span> sha256<span class="token punctuation">(</span><span class="token builtin">bytes</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token keyword">return</span> server_seed</code></pre>
+
+<p>With this snippet, we can do just that.</p>
+<p>By the way, I use <strong>pwntools</strong> to interact with the server and get the server seed (and later introduce my client seed). Considering that the winner flow of the output of the server is like this:</p>
+<pre class="language-none"><code class="language-none">Welcome to Provably Fair Roulette!
+Server seed hash (verify later): &lt;random hash&gt;
+Enter your client seed (press enter to generate): &lt;winner hash&gt;
+Place your bet (number 0-36 or color red&#x2F;black&#x2F;green): 13
+
+The wheel lands on: 13 (red)
+Congratulations! You win!
+...and you got 13, double congratulations!
+
+Verification Details:
+Server seed: &lt;random hash&gt;
+Client seed: &lt;winner hash&gt;
+Combined string: &lt;random hash&gt;:&lt;winner hash&gt;
+Calculated number: 13
+Resulting color: red</code></pre>
+
+<p>Here’s how you can split the output to store the hashed server seed in a variable:</p>
+<pre class="language-python" data-language="python"><code class="language-python">conn <span class="token operator">=</span> remote<span class="token punctuation">(</span><span class="token string">'localhost'</span><span class="token punctuation">,</span><span class="token number">8081</span><span class="token punctuation">)</span> <span class="token comment"># The port my server was running on</span>
+<span class="token comment"># The challenge requires us to get the number 13 a total of 37 times in a row</span>
+<span class="token keyword">for</span> o <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">37</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+	conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment"># "Welcome to Provably Fair Roulette!"</span>
+	response <span class="token operator">=</span> conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>decode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>strip<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment"># This line contains the hash</span>
+	server_hash <span class="token operator">=</span> response<span class="token punctuation">.</span>split<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token number">5</span><span class="token punctuation">]</span>
+	
+	<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Server hash: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_hash<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+	
+	<span class="token comment"># *Now* we get the server seed</span>
+	server_seed <span class="token operator">=</span> get_server_seed<span class="token punctuation">(</span>server_hash<span class="token punctuation">)</span></code></pre>
+
+<p>Now we have the server seed, which was the last piece we needed to be able to <strong>bruteforce a client seed that always generates the number 13</strong> on the roulette. Let’s see how we can bruteforce the seed:</p>
+<pre class="language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">get_winner_client_seed</span><span class="token punctuation">(</span>server_seed<span class="token punctuation">)</span><span class="token punctuation">:</span>
+	client_seed <span class="token operator">=</span> <span class="token string">""</span>
+	<span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
+		<span class="token comment"># Randomly generate a seed</span>
+		client_seed <span class="token operator">=</span> secrets<span class="token punctuation">.</span>token_bytes<span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">hex</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+		<span class="token comment"># Combine it with the server seed</span>
+		combined <span class="token operator">=</span> <span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_seed<span class="token punctuation">&#125;</span></span><span class="token string">:</span><span class="token interpolation"><span class="token punctuation">&#123;</span>client_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span>
+		<span class="token comment"># Get the game hash with the combined seed</span>
+		game_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>combined<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+		hash_int <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span>game_hash<span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span>
+		<span class="token comment"># Check if the roulette number of the hash is 13</span>
+		roulette_number <span class="token operator">=</span> hash_int <span class="token operator">%</span> <span class="token number">37</span> <span class="token comment"># 0-36</span>
+		<span class="token keyword">if</span> roulette_number <span class="token operator">==</span> <span class="token number">13</span><span class="token punctuation">:</span>
+			<span class="token keyword">break</span>
+	
+	<span class="token keyword">return</span> client_seed</code></pre>
+
+<p>This generates a winner seed that, together with the server seed, will always generate the number 13. That’s all the technicality of the challenge! Now we just need to complete the <strong>pwntools</strong> script to interact properly with the server.</p>
+<p>First we generate the <strong>winner seed</strong> on the script, and then we use it as input:</p>
+<pre class="language-python" data-language="python"><code class="language-python"><span class="token comment"># Gets a winner seed</span>
+winner_seed <span class="token operator">=</span> get_winner_client_seed<span class="token punctuation">(</span>server_seed<span class="token punctuation">)</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Winner seed obtained"</span><span class="token punctuation">)</span>
+
+<span class="token comment"># We wait a second because there's no delimiter because the server is now asking for input</span>
+<span class="token comment"># (There likely is a much better way to do this)</span>
+conn<span class="token punctuation">.</span>recv<span class="token punctuation">(</span>timeout<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+<span class="token comment"># We send our winner seed as input</span>
+conn<span class="token punctuation">.</span>sendline<span class="token punctuation">(</span>winner_seed<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span></code></pre>
+
+<p>Then the server will ask us which number do we think we’ll be the winner. Since we know it will be 13, and that’s the number we need to get 37 times in a row, we say it will be 13:</p>
+<pre class="language-python" data-language="python"><code class="language-python">conn<span class="token punctuation">.</span>recv<span class="token punctuation">(</span>timeout<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+conn<span class="token punctuation">.</span>sendline<span class="token punctuation">(</span><span class="token string">"13"</span><span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span></code></pre>
+
+<p>By this point we’ve guessed correctly. To check that we did, we print the next two lines we receive from the server, and skip over the rest:</p>
+<pre class="language-python" data-language="python"><code class="language-python">conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token comment"># This will print that we indeed guessed right</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span>conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span><span class="token punctuation">(</span>conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token comment"># We skip over unnecessary information</span>
+<span class="token keyword">for</span> _ <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+	conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span></code></pre>
+
+<p>And that’s it! Now we just need to do it <strong>37 more times</strong>. So, putting it all together:</p>
+<pre class="language-python" data-language="python"><code class="language-python"><span class="token keyword">from</span> pwn <span class="token keyword">import</span> <span class="token operator">*</span>
+<span class="token keyword">from</span> hashlib <span class="token keyword">import</span> <span class="token operator">*</span>
+<span class="token keyword">import</span> secrets
+
+<span class="token keyword">def</span> <span class="token function">get_winner_client_seed</span><span class="token punctuation">(</span>server_seed<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    client_seed <span class="token operator">=</span> <span class="token string">""</span>
+    <span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>     
+        <span class="token comment"># Randomly generate a seed</span>
+        client_seed <span class="token operator">=</span> secrets<span class="token punctuation">.</span>token_bytes<span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">hex</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token comment"># Combine it with the server seed</span>
+        combined <span class="token operator">=</span> <span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_seed<span class="token punctuation">&#125;</span></span><span class="token string">:</span><span class="token interpolation"><span class="token punctuation">&#123;</span>client_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span>
+        <span class="token comment"># Get the game hash with the combined seed</span>
+        game_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>combined<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        hash_int <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span>game_hash<span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span>
+        
+        <span class="token comment"># Check if the roulette number of the hash is 13</span>
+        roulette_number <span class="token operator">=</span> hash_int <span class="token operator">%</span> <span class="token number">37</span>  <span class="token comment"># 0-36</span>
+        <span class="token keyword">if</span> roulette_number <span class="token operator">==</span> <span class="token number">13</span><span class="token punctuation">:</span>
+            <span class="token keyword">break</span>
+    
+    <span class="token keyword">return</span> client_seed
+
+
+<span class="token keyword">def</span> <span class="token function">get_server_seed</span><span class="token punctuation">(</span>server_seed_hash<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    i <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token builtin">int</span><span class="token punctuation">(</span>math<span class="token punctuation">.</span><span class="token builtin">pow</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">17</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        potential_server_seed <span class="token operator">=</span> sha256<span class="token punctuation">(</span><span class="token builtin">bytes</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        potential_server_seed_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>potential_server_seed<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">if</span> potential_server_seed_hash <span class="token operator">==</span> server_seed_hash<span class="token punctuation">:</span>
+            <span class="token keyword">break</span>
+    
+    server_seed <span class="token operator">=</span> sha256<span class="token punctuation">(</span><span class="token builtin">bytes</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">return</span> server_seed
+
+
+<span class="token keyword">def</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    conn <span class="token operator">=</span> remote<span class="token punctuation">(</span><span class="token string">'localhost'</span><span class="token punctuation">,</span><span class="token number">8081</span><span class="token punctuation">)</span>
+    <span class="token comment"># The challenge requires us to get the number 13 a total of 37 times in a row</span>
+    <span class="token keyword">for</span> o <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">37</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+		
+        conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        response <span class="token operator">=</span> conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>decode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>strip<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token comment"># This line contains the server hash</span>
+        server_hash <span class="token operator">=</span> response<span class="token punctuation">.</span>split<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token number">5</span><span class="token punctuation">]</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Server hash: </span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_hash<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
+        
+        <span class="token comment"># Gets the server seed</span>
+        server_seed <span class="token operator">=</span> get_server_seed<span class="token punctuation">(</span>server_hash<span class="token punctuation">)</span>
+        
+        <span class="token comment"># Gets a winner seed</span>
+        winner_seed <span class="token operator">=</span> get_winner_client_seed<span class="token punctuation">(</span>server_seed<span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Winner seed obtained"</span><span class="token punctuation">)</span>
+        
+        <span class="token comment"># We wait a second because there's no delimiter because the server is now asking for input</span>
+        <span class="token comment"># (There likely is a much better way to do this)</span>
+        conn<span class="token punctuation">.</span>recv<span class="token punctuation">(</span>timeout<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+        <span class="token comment"># We send our winner seed as input and guess that the number will be 13</span>
+        conn<span class="token punctuation">.</span>sendline<span class="token punctuation">(</span>winner_seed<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        
+        conn<span class="token punctuation">.</span>recv<span class="token punctuation">(</span>timeout<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+        conn<span class="token punctuation">.</span>sendline<span class="token punctuation">(</span><span class="token string">"13"</span><span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        
+        conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token comment"># This will print that we indeed guessed right</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span>conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token keyword">print</span><span class="token punctuation">(</span>conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        
+        <span class="token comment"># We skip over unnecessary information</span>
+        <span class="token keyword">for</span> _ <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">:</span>    
+            conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span>
+	
+	
+    <span class="token comment"># By this point we've guessed enough to get the flag</span>
+    conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token comment"># Should print the flag</span>
+    <span class="token keyword">print</span><span class="token punctuation">(</span>conn<span class="token punctuation">.</span>recvline<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    conn<span class="token punctuation">.</span>close<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+
+<span class="token keyword">if</span> __name__ <span class="token operator">==</span> <span class="token string">"__main__"</span><span class="token punctuation">:</span>
+    main<span class="token punctuation">(</span><span class="token punctuation">)</span></code></pre>
+
+<p>Notice how I print the flag after the loop.</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p><strong>Bruteforcing</strong> is a very handy (and fun, in my opinion) tool that can help us obtain more data from data that we already have. Always keep an eye open for <strong>bruteforcing oportunities</strong> when you receive a hash!</p>
+
+  <p><a class="classtest-link" href="/tags/breakthesyntax2025/" rel="tag">breakthesyntax2025</a>, <a class="classtest-link" href="/tags/bts/" rel="tag">bts</a>, <a class="classtest-link" href="/tags/crypto/" rel="tag">crypto</a>, <a class="classtest-link" href="/tags/ctf/" rel="tag">ctf</a> — May 31, 2025</p>
+  
+
+
+        </div>
+
+        
+          <div class="row mt-2">
+  
+    <div class="eight columns">
+      <p id="madewith">Made with ❤ and
+        <a class="footer-link icon" href="https://hexo.io" target="_blank" style="text-decoration: none;" rel="noreferrer" aria-label="Hexo.io">
+        <svg class="hexo svg-hov" width="14" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>Hexo.js</title><path d="M12 .007L1.57 6.056V18.05L12 23.995l10.43-6.049V5.952L12 .007zm4.798 17.105l-.939.521-.939-.521V12.94H9.08v4.172l-.94.521-.938-.521V6.89l.939-.521.939.521v4.172h5.84V6.89l.94-.521.938.521v10.222z"/></svg>
+        </a>
+        
+    </div>
+
+    <!-- Sepcial thanks to https://simpleicons.org/ for the icons -->
+    <div class="four columns mb-3 posisi" >
+      
+      <a class="ml-0 footer-link icon" href="https://github.com/markelmencia" target="_blank" style="text-decoration: none" rel="noreferrer" aria-label="GitHub">
+        <svg class="github svg-hov" width="18" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+      </a>
+      
+
+      
+
+      
+
+      
+
+      
+
+    </div>
+  
+</div>
+
+        
+        <!--
+        <div class="row mt-2">
+    <h3>Search</h3>
+    <div><input id="search-text" title="search" class="search-text" type="text" placeholder="search......"></div>
+    <div style="margin-top: 1.5rem;">
+      <ul id="result"></ul>
+    </div>
+  </div>
+        
+        -->
+      </div>
+
+    </div>
+
+  </div>
+  <script src="/js/nanobar.min.js"></script>
+
+  <script>
+    var options = {
+      classname: 'nanobar',
+      id: 'myNanobar'
+    };
+    var nanobar = new Nanobar(options);
+    nanobar.go(30);
+    nanobar.go(76);
+    nanobar.go(100);
+  </script>
+
+</body>
+
+</html>
