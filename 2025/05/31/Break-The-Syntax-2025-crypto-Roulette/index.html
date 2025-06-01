@@ -15,7 +15,7 @@
   
   <link rel="canonical" href="https://markelmencia.github.io/2025/05/31/Break-The-Syntax-2025-crypto-Roulette/">
   
-  <meta name="description" content="Break The Syntax CTF 2025: crypto&amp;#x2F;roulette#crypto #brute-force #hash #breakthesyntax #bts OverviewThis challenge simulates a “Provably Fair Roule">
+  <meta name="description" content="Break The Syntax CTF 2025: crypto&amp;#x2F;rouletteOverviewThis challenge simulates a “Provably Fair Roulette”. In order to interact with the challenge we">
   
   
   <meta name="keywords" content="markelmencia, cybersecurity">
@@ -28,14 +28,14 @@
   <meta property="og:type" content="article" />
   <meta property="og:title" content="Break The Syntax 2025: crypto/Roulette" />
   
-  <meta property="og:description" content="Break The Syntax CTF 2025: crypto&amp;#x2F;roulette#crypto #brute-force #hash #breakthesyntax #bts OverviewThis challenge simulates a “Provably Fair Roule">
+  <meta property="og:description" content="Break The Syntax CTF 2025: crypto&amp;#x2F;rouletteOverviewThis challenge simulates a “Provably Fair Roulette”. In order to interact with the challenge we">
   
   <meta property="og:url" content="https://markelmencia.github.io/2025/05/31/Break-The-Syntax-2025-crypto-Roulette/" />
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Break The Syntax 2025: crypto/Roulette">
   
-  <meta name="twitter:description" content="Break The Syntax CTF 2025: crypto&amp;#x2F;roulette#crypto #brute-force #hash #breakthesyntax #bts OverviewThis challenge simulates a “Provably Fair Roule">
+  <meta name="twitter:description" content="Break The Syntax CTF 2025: crypto&amp;#x2F;rouletteOverviewThis challenge simulates a “Provably Fair Roulette”. In order to interact with the challenge we">
   
   
   
@@ -206,8 +206,7 @@
         <div class="trans">
             <h2>Break The Syntax 2025: crypto/Roulette</h2>
 
-  <h1 id="Break-The-Syntax-CTF-2025-crypto-roulette"><a href="#Break-The-Syntax-CTF-2025-crypto-roulette" class="headerlink" title="Break The Syntax CTF 2025: crypto&#x2F;roulette"></a>Break The Syntax CTF 2025: crypto&#x2F;roulette</h1><p>#crypto #brute-force #hash #breakthesyntax #bts</p>
-<h2 id="Overview"><a href="#Overview" class="headerlink" title="Overview"></a>Overview</h2><p>This challenge simulates a “Provably Fair Roulette”. In order to interact with the challenge we have to connect to the server that runs it. To get the flag, according to the given description, <strong>we must get the number 13 a total of 37 times in a row</strong>. To do so, we are given the code that runs in the server.</p>
+  <h1 id="Break-The-Syntax-CTF-2025-crypto-roulette"><a href="#Break-The-Syntax-CTF-2025-crypto-roulette" class="headerlink" title="Break The Syntax CTF 2025: crypto&#x2F;roulette"></a>Break The Syntax CTF 2025: crypto&#x2F;roulette</h1><h2 id="Overview"><a href="#Overview" class="headerlink" title="Overview"></a>Overview</h2><p>This challenge simulates a “Provably Fair Roulette”. In order to interact with the challenge we have to connect to the server that runs it. To get the flag, according to the given description, <strong>we must get the number 13 a total of 37 times in a row</strong>. To do so, we are given the code that runs in the server.</p>
 <h2 id="Objective"><a href="#Objective" class="headerlink" title="Objective"></a>Objective</h2><p>Somehow manipulate our interaction with the server to <strong>hardcode the number 13 as the resulting number</strong> of the roulette.</p>
 <h2 id="Writeup"><a href="#Writeup" class="headerlink" title="Writeup"></a>Writeup</h2><h3 id="The-server"><a href="#The-server" class="headerlink" title="The server"></a>The server</h3><p>Let’s look at the <strong>Python script</strong> that runs in the server, to see how the winner number is generated:</p>
 <pre class="language-python" data-language="python"><code class="language-python"><span class="token keyword">from</span> hashlib <span class="token keyword">import</span> sha256
@@ -338,7 +337,7 @@ roulette_color <span class="token operator">=</span> get_color<span class="token
 <li>The fact that the <strong>server seed</strong> is a random number of a <strong>fixed size</strong> (17 bits).</li>
 </ul>
 <p>Smell something fishy? With this data we have everything we need to get the flag, let’s see how!</p>
-<h3 id="The-vulnerability"><a href="#The-vulnerability" class="headerlink" title="The vulnerability"></a>The vulnerability</h3><p>Considering that the server allows us to introduce our own seed, all we need to do is provide one that <strong>we know</strong> will generate a 13. But how do we know if a client see will generate a 13? Let’s go back to the server script:</p>
+<h3 id="The-vulnerability"><a href="#The-vulnerability" class="headerlink" title="The vulnerability"></a>The vulnerability</h3><p>Considering that the server allows us to introduce our own seed, all we need to do is provide one that <strong>we know</strong> will generate a 13. But how do we know if a client seed will generate a 13? Let’s go back to the server script:</p>
 <pre class="language-python" data-language="python"><code class="language-python"><span class="token comment"># Generate game hash</span>
 combined <span class="token operator">=</span> <span class="token string-interpolation"><span class="token string">f"</span><span class="token interpolation"><span class="token punctuation">&#123;</span>server_seed<span class="token punctuation">&#125;</span></span><span class="token string">:</span><span class="token interpolation"><span class="token punctuation">&#123;</span>client_seed<span class="token punctuation">&#125;</span></span><span class="token string">"</span></span>
 game_hash <span class="token operator">=</span> sha256<span class="token punctuation">(</span>combined<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span>hexdigest<span class="token punctuation">(</span><span class="token punctuation">)</span>
