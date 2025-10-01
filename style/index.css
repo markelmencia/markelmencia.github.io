@@ -1,0 +1,72 @@
+/* 
+    COLOR PALETTE: Soft Lavender https://coolors.co/palette/eae8ff-d8d5db-adacb5-2d3142-b0d7ff
+    #eae8ff: blue (#77bbff?)
+    #d8d5db: dark blue
+    #adacb5: dark gray
+    #2d3142: light gray
+    #bod7ff: lavender
+*/
+
+* {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-family: "Red Hat Display", sans-serif;
+    font-style: normal;
+}
+
+body {
+    background-color: #eae8ff;
+}
+
+#top-main {
+    background-color: #2d3142;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Removes the default "stretch" option, that can stretch the logo */ 
+}
+
+#top-radius {
+    background-color: #2d3142;
+    border-bottom-right-radius: 100%;
+    height: 200px;
+}
+
+#top-main-text {
+    width: 60%;
+}
+
+#logo {
+    right: 0;
+}
+
+h1 {
+    color: #eae8ff;
+    font-size: 100px;
+}
+
+h3 {
+    color: #adacb5;
+    font-size: 35px;
+}
+
+h2 {
+    color: #adacb5;
+    font-size: 60px;
+}
+
+#name {
+    padding-left: 10%;
+    color: #eae8ff;
+    font-size: 100px;
+}
+
+#name-braille {
+    padding-left: 45%;
+    padding-top: 30%;
+}
+
+#degree {
+    padding-bottom: 5%;
+    padding-left: 10%
+}

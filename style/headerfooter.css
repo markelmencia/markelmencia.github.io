@@ -1,0 +1,25 @@
+nav {
+    background-color: #eae8ff;
+}
+
+ul {
+    display: flex;
+    align-items: center;
+    list-style-type: none;  
+}
+
+li {
+    margin-right: 20px;
+    font-size: 25px;
+    padding: 5px;
+}
+
+#logo-nav {
+    height: 50px;
+    width: 50px;
+    display: block;
+}
+
+#logo-li {
+    background-color: #2d3142;
+}
