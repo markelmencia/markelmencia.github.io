@@ -59,6 +59,7 @@ h2 {
     padding-left: 10%;
     color: #eae8ff;
     font-size: 100px;
+    margin-top: -20px;
 }
 
 #name-braille {
@@ -71,30 +72,130 @@ h2 {
     padding-left: 10%
 }
 
+.section {
+    padding: 15px;
+}
+
+.section-braille {
+    color: #eae8ff;
+    opacity: 70%;
+}
+
+.section-title {
+    color: #eae8ff;
+}
+
 #aboutme {
     background-color: #77bbff;
     margin: 40px;
     margin-left: 10%;
     margin-right: 10%;
     border-radius: 20px;
-    padding: 15px;
     text-align: center;
 }
 
-#aboutme-text {
+#aboutme-title {
     text-align: center;
     margin-top: -30px;
-    color: #eae8ff;
+    
 }
 
 #aboutme-braille {
     text-align: center;
-    margin-left: 200px;
-    color: #eae8ff;
-    opacity: 70%;
+    margin-left: 200px; 
 }
 
 p {
     margin: 10px;
     font-size: 20px;
+}
+
+#skills {
+    background-color: #2d3142;
+    color: white;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    margin-right: 20%;
+}
+
+.skill-title {
+    color: #eae8ff;
+}
+
+#skills-title {
+    text-align: end;
+    margin-top: -20px;
+    margin-right: 5px;
+}
+
+#skills-braille {
+    text-align: end;
+    margin-right: 40px;
+}
+
+.skills-section {
+    display: flex;
+    align-items: center;
+}
+
+#golang-logo {
+    width: 350px    
+}
+
+#golang-info {
+    margin-right: 300px;
+}
+
+#java-info {
+    text-align: end;
+    margin-left: 300px;
+}
+
+#java-logo {
+    width: 200px;
+    margin-right: 200px;
+}
+
+#db-logo {
+    width: 175px;
+    margin: 70px;
+    margin-left: 90px;
+}
+
+#db-info {
+    margin-right: 300px;
+}
+
+#python-info {
+    text-align: end;
+    margin-left: 300px;
+}
+
+#python-logo {
+    width: 175px;
+    margin: 20px;
+    margin-right: 220px;
+
+}
+
+#c-logo {
+    width: 120px;
+    margin-left: 55px;
+    margin-right: 10px;
+    margin-bottom: 50px;
+    margin-top: 70px;
+}
+
+#cpp-logo {
+    width: 120px;
+    margin-top: 120px;
+    margin-right: 30px;
+}
+
+#ccpp-info {
+    margin-right: 300px;
+}
+
+#ccpp-skill {
+    margin-bottom: 50px;
 }

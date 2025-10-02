@@ -40,14 +40,74 @@
 
             <div id="top-radius"></div>
 
-            <div id="aboutme">
-                <h3 id="aboutme-braille">⠁⠃⠕⠥⠞ ⠍⠑</h3>
-                <h2 id="aboutme-text">About me</h2>
+            <div id="aboutme" class="section">
+                <h3 id="aboutme-braille" class="section-braille">⠁⠃⠕⠥⠞ ⠍⠑</h3>
+                <h2 id="aboutme-title" class="section-title">About me</h2>
                 
                 <p>
-                    I'm a third-year Computer Engineering student at Deusto University. My interests range from low-level and high-performance computing research/development to pedagogy. I also have some knowledge on cybersecurity, mainly focused on CTF (Capture The Flag) competitions.  I have worked on multiple development projects, mostly focused on computer architecture but also on TCP communication or written work. At the moment, I'm working on compression algoritms and their performance in pararelized enviroments, such as CUDA.
+                    I'm a third-year Computer Engineering student at Deusto University. My interests range from low-level and high-performance computing research/development to pedagogy. I also have some knowledge on cybersecurity, mainly focused on CTF (Capture The Flag) competitions.  I have worked on multiple development projects, mostly focused on computer architecture but also on TCP communication or written work. At the moment, I'm working on compression algoritms and their performance in parallelized enviroments, such as CUDA.
                 </p>
             </div>
+
+            <div id="skills" class="section">
+                <h3 id="skills-braille" class="section-braille">⠎⠅⠊⠇⠇⠎</h3>
+                <h2 id="skills-title" class="section-title">Skills</h2> 
+
+                    <div class="skills-section">
+                        <img src="img/golang.png" alt="Golang logo" id="golang-logo">
+                        <div id="golang-info">
+                            <h2 class="skill-title">Golang</h2>
+                            <p>
+                                Golang is a language I quite like, and the one where I've written more complex code. I have experience with working with TCP communication and architecture replication for emulating devices with this language.
+                            </p>
+                        </div> 
+                    </div>
+
+                    <div class="skills-section">
+                         <div id="java-info">
+                            <h2 class="skill-title">Java</h2>
+                            <p>
+                                Java is a language I'm very accustomed to. I've built full-stack applications on it, such as a text editor with assembling capabilities. From text processing to concurrency, I'm very comfortable with object oriented programming environments.
+                            </p>
+                        </div> 
+                        <img src="img/java.svg" alt="Java logo" id="java-logo">
+                    </div>
+
+                    <div class="skills-section">
+                        <img src="img/database.svg" alt="Database logo" id="db-logo">
+                        <div id="db-info">
+                            <h2 class="skill-title">Databases</h2>
+                            <p>
+                                I have experience in designing and developing relational and vectorial databases, with technologies such as MySQL and PostgreSQL. I can also set up Docker images for portable deployment of such databases.
+                            </p>
+                        </div> 
+                    </div>
+
+                     <div id="skills-python" class="skills-section">
+                         <div id="python-info">
+                            <h2 class="skill-title">Python</h2>
+                            <p>
+                                Although not for development of full-stack applications, I'm accustomed to Python because of its use for CTF cybersecurity challenges. Oftentimes, Python scripts are used to exploit vulnerabilities in certain challenges, to decrypt, brute-force or communicate with different environments. That's what I've used it for.
+                            </p>
+                        </div> 
+                        <img src="img/python.png" alt="Python logo" id="python-logo">
+                    </div>
+
+                    <div class="skills-section" id="ccpp-skill">
+                        <img src="img/c.png" alt="C logo" id="c-logo">
+                        <img src="img/cpp.png" alt="C++ logo" id="cpp-logo">
+                        <div id="ccpp-info">
+                            <h2 class="skill-title">C/C++</h2>
+                            <p>
+                                C and C++ are the languages I'm currently working with. I've built low-level programs such as a shell with them. I'm currently using C to build implementations of compression-related algoritms, such as the Burrows-Wheeler Transformation algoritm, to test its performance on parallel environments with CUDA.
+                            </p>
+                        </div> 
+                    </div>
+            </div>
         </main>
+
+        <footer>
+
+        </footer>
     </body>
 </html>
