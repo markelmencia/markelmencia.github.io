@@ -1,3 +1,10 @@
+header {
+    position: fixed;
+    width: 100%;
+    border-bottom: #2d3142 5px solid;
+    z-index: 2; /* Makes the header stay in a "higher" layer, so items in <main> don't overlap with it */
+}
+
 nav {
     background-color: #eae8ff;
 }
