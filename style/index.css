@@ -1,10 +1,10 @@
 /* 
     COLOR PALETTE: Soft Lavender https://coolors.co/palette/eae8ff-d8d5db-adacb5-2d3142-b0d7ff
-    #eae8ff: blue (#77bbff?)
+    #bod7ff: blue (#77bbff?)
     #d8d5db: dark blue
-    #adacb5: dark gray
-    #2d3142: light gray
-    #bod7ff: lavender
+    #adacb5: light gray
+    #2d3142: dark gray
+    #eae8ff: lavender
 */
 
 * {
@@ -69,4 +69,32 @@ h2 {
 #degree {
     padding-bottom: 5%;
     padding-left: 10%
+}
+
+#aboutme {
+    background-color: #77bbff;
+    margin: 40px;
+    margin-left: 10%;
+    margin-right: 10%;
+    border-radius: 20px;
+    padding: 15px;
+    text-align: center;
+}
+
+#aboutme-text {
+    text-align: center;
+    margin-top: -30px;
+    color: #eae8ff;
+}
+
+#aboutme-braille {
+    text-align: center;
+    margin-left: 200px;
+    color: #eae8ff;
+    opacity: 70%;
+}
+
+p {
+    margin: 10px;
+    font-size: 20px;
 }
