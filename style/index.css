@@ -92,6 +92,7 @@ h2 {
     margin-right: 10%;
     border-radius: 20px;
     text-align: center;
+    padding: 50px;
 }
 
 #aboutme-title {
@@ -116,6 +117,7 @@ p {
     border-top-right-radius: 20px;
     border-bottom-right-radius: 20px;
     margin-right: 20%;
+    padding: 50px;
 }
 
 .skill-title {
@@ -175,7 +177,10 @@ p {
     width: 175px;
     margin: 20px;
     margin-right: 220px;
+}
 
+#skills-python {
+    margin-bottom: 50px;
 }
 
 #c-logo {
@@ -194,8 +199,4 @@ p {
 
 #ccpp-info {
     margin-right: 300px;
-}
-
-#ccpp-skill {
-    margin-bottom: 50px;
 }
