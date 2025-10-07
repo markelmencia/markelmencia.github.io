@@ -23,7 +23,7 @@ body {
     background-color: #2d3142;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start; /* Removes the default "stretch" option, that can stretch the logo */ 
+    align-items: center;
 }
 
 #top-radius {
@@ -199,4 +199,60 @@ p {
 
 #ccpp-info {
     margin-right: 300px;
+}
+
+#participation {
+    background-color: #2d3142;
+    color: white;
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    margin-left: 20%;
+    margin-top: 40px;
+    padding: 50px;
+}
+
+#participation-braille {
+    margin-left: 55px;
+}
+
+#participation-title {
+    margin-top: -20px;
+    margin-bottom: 40px;
+}
+
+.participation-section {
+    margin: 40px;
+    display: flex;
+    align-items: center;
+}
+
+#decode-logo {
+    width: 175px;
+    margin-right: 30px;
+    margin-left: 50px;
+}
+
+#decode-info {
+    margin-right: 500px;
+}
+
+#ctf-info {
+    text-align: end;
+    margin-left: 200px;
+}
+
+#ctf-logo {
+    margin-left: 30px;
+    width: 500px;
+    margin-right: 200px;
+}
+
+#hackathon-logo {
+    width: 600px;
+    margin-right: 30px;
+    margin-left: 50px;
+}
+
+#hackathon-section {
+    margin-bottom: 0;
 }
