@@ -30,3 +30,17 @@ li {
 #logo-li {
     background-color: #2d3142;
 }
+
+footer {
+    background-color: #2d3142;
+    border-top: #eae8ff 5px solid;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+a {
+    color: white;
+    margin-right: 15px;
+}
