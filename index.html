@@ -40,11 +40,12 @@
 
             <div id="top-radius"></div>
 
+            
             <div id="aboutme" class="section">
                 <h3 id="aboutme-braile" class="section-braile">⠁⠃⠕⠥⠞ ⠍⠑</h3>
                 <h2 id="aboutme-title" class="section-title">About me</h2>
                 
-                <p>
+                <p id="aboutme-text">
                     I'm a third-year Computer Engineering student at Deusto University. My interests range from low-level and high-performance computing research/development to pedagogy. I also have some knowledge on cybersecurity, mainly focused on CTF (Capture The Flag) competitions.  I have worked on multiple development projects, mostly focused on computer architecture but also on TCP communication or written work. At the moment, I'm working on compression algoritms and their performance in parallelized enviroments, such as CUDA.
                 </p>
             </div>
@@ -53,31 +54,31 @@
                 <h3 id="skills-braile" class="section-braile">⠎⠅⠊⠇⠇⠎</h3>
                 <h2 id="skills-title" class="section-title">Skills</h2> 
 
-                <div class="skills-section">
-                <img src="img/golang.png" alt="Golang logo" id="golang-logo">
+                <div class="skills-section" id="golang-section">
+                <img src="img/golang.svg" alt="Golang logo" id="golang-logo">
                 <div id="golang-info">
                     <h2 class="skill-title">Golang</h2>
-                        <p>
+                        <p class="skill-text">
                             Golang is a language I quite like, and the one where I've written more complex code. I have experience with working with TCP communication and architecture replication for emulating devices with this language.
                         </p>
                     </div> 
                 </div>
 
-                <div class="skills-section">
+                <div class="skills-section" id="skills-java">
                     <div id="java-info">
                         <h2 class="skill-title">Java</h2>
-                        <p>
+                        <p class="skill-text">
                             Java is a language I'm very accustomed to. I've built full-stack applications on it, such as a text editor with assembling capabilities. From text processing to concurrency, I'm very comfortable with object oriented programming environments.
                         </p>
                     </div> 
                     <img src="img/java.svg" alt="Java logo" id="java-logo">
                 </div>
 
-                <div class="skills-section">
+                <div class="skills-section" id="db-section">
                     <img src="img/database.svg" alt="Database logo" id="db-logo">
                     <div id="db-info">
                         <h2 class="skill-title">Databases</h2>
-                        <p>
+                        <p class="skill-text">
                             I have experience in designing and developing relational and vectorial databases, with technologies such as MySQL and PostgreSQL. I can also set up Docker images for portable deployment of such databases.
                         </p>
                     </div> 
@@ -86,19 +87,22 @@
                 <div id="skills-python" class="skills-section">
                     <div id="python-info">
                         <h2 class="skill-title">Python</h2>
-                            <p>
-                                Although not for development of full-stack applications, I'm accustomed to Python because of its use for CTF cybersecurity challenges. Oftentimes, Python scripts are used to exploit vulnerabilities in certain challenges, to decrypt, brute-force or communicate with different environments. That's what I've used it for.
-                            </p>
+                        <p class="skill-text">
+                            Although not for development of full-stack applications, I'm accustomed to Python because of its use for CTF cybersecurity challenges. Oftentimes, Python scripts are used to exploit vulnerabilities in certain challenges, to decrypt, brute-force or communicate with different environments. That's what I've used it for.
+                        </p>
                     </div> 
                     <img src="img/python.png" alt="Python logo" id="python-logo">
                 </div>
 
                 <div class="skills-section" id="ccpp-skill">
-                    <img src="img/c.png" alt="C logo" id="c-logo">
-                    <img src="img/cpp.png" alt="C++ logo" id="cpp-logo">
+                    <div id="ccpp-logos">
+                        <img src="img/c.png" alt="C logo" id="c-logo">
+                        <img src="img/cpp.png" alt="C++ logo" id="cpp-logo">
+                    </div>
+                  
                     <div id="ccpp-info">
                         <h2 class="skill-title">C/C++</h2>
-                        <p>
+                        <p class="skill-text">
                             C and C++ are the languages I'm currently working with. I've built low-level programs such as a shell with them. I'm currently using C to build implementations of compression-related algoritms, such as the Burrows-Wheeler Transformation algoritm, to test its performance on parallel environments with CUDA.
                         </p>
                     </div> 
@@ -110,42 +114,43 @@
                 <h2 class="section-title" id="participation-title">Participation</h2>
 
                 <div class="participation-section">
-                    <img src="img/0xdecode.webp" alt="0xDECODE logo" id="decode-logo">
                     <div id="decode-info">
                         <h2 class="skill-title">0xDECODE</h2>
-                        <p>
+                        <p class="participation-text">
                             I'm an active member in the Deusto Electronic Club of Developers and Engineers (0xDECODE for short), a group that organizes free educational events in the Deusto University, for students, by students. In it, I've organizes multiple courses on a range of topics.
                         </p>
                     </div>
+                    <img src="img/0xdecode.webp" alt="0xDECODE logo" id="decode-logo">
                 </div>
 
-                <div class="participation-section">
+                <div class="participation-section" id="participation-ctf">
+                    <img src="img/flag.svg" alt="CTF logo" id="ctf-logo">
                     <div id="ctf-info">
                         <h2 class="skill-title">CTF Competitions</h2>
-                        <p>
+                        <p class="participation-text">
                             Although presently in a hiatus, I once was an active Capture The Flag participant. I've played on multiple CTF cybersecurity competitions, both by myself and with 0xDECODE members. Notably, I have played in an on-site competition, in Rennes, France, called the Midnight Flag CTF 2025 Finals.
                         </p>
                     </div>
-                    <img src="img/flag.svg" alt="CTF logo" id="ctf-logo">
                 </div> 
 
                 <div class="participation-section" id="hackathon-section">
-                    <img src="img/code.svg" alt="Coding logo" id="hackathon-logo">
                     <div id="hackathon-info">
                         <h2 class="skill-title">Hackathons</h2>
-                        <p>
+                        <p class="participation-text">
                             I've participated in different hackathons: highly intensive coding challenges that usually last a weekend, in which you have to develop a full application or solution to a challenge. With different ranges of success, I've participated in the HackUDC 2025 hackathon in A Coruña and in the NASA Space Apps Challenge 2025 in Urduliz. I find these events very fruitful and I plan on participating in more hackathons next year. 
                         </p>
                     </div>
+                    <img src="img/code.svg" alt="Coding logo" id="hackathon-logo">
                 </div>
             </div>
 
             <div id="contact" class="section">
                 <h3 id="contact-braile" class="section-braile">⠉⠕⠝⠞⠁⠉⠞ ⠍⠑</h3>
                 <h2 id="contact-title" class="section-title">Contact me</h2>           
-                <p>
+                <p id="contact-text">
                     If you have any inquiry, question or project idea, be sure to contact me!
                 </p>
+                <div id="contact-button">Contact</div>
             </div>
         </main>
 

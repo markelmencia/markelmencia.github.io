@@ -6,7 +6,7 @@ header {
 }
 
 nav {
-    background-color: #eae8ff;
+    background-color: white;
 }
 
 ul {
@@ -43,4 +43,28 @@ footer {
 a {
     color: white;
     margin-right: 15px;
+}
+
+@media only screen and (max-width: 885px) {
+    #logo-nav {
+        height: 40px;
+        width: 40px;
+    }
+
+    li {
+        padding: 0
+    }
+}
+
+@media only screen and (max-width: 561px) {
+    #logo-nav {
+        height: 30px;
+        width: 30px;
+    }
+
+    li {
+        padding: 0;
+        font-size: 20px;
+        
+    }
 }
