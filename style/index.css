@@ -269,12 +269,26 @@ p {
 #contact-title {
     text-align: center;
     margin-top: -30px;
-    
 }
 
 #contact-braile {
     text-align: center;
     margin-left: 200px; 
+}
+
+#contact-text {
+    font-size: 20px;
+}
+
+#contact-button {
+    margin-top: 10px;
+    font-size: 25px;
+    color: white;
+    background-color: #2d3142;
+    display: inline-block;
+    padding: 15px;
+    width: 120px;
+    box-shadow: 10px 10px 0px 0px #eae8ff;    
 }
 
 @media only screen and (max-width: 1126px) {
@@ -323,7 +337,7 @@ p {
     }
 
     /* SKILLS */
-    #skills, #contact {
+    #skills {
         margin-right: 10%;
     }
 
@@ -457,11 +471,12 @@ p {
     }
 
     #aboutme-braile, #contact-braile {
-        font-size: 20px;
+        font-size: 15px;
     }
 
     #aboutme-title, #contact-title {
-        font-size: 45px;
+        font-size: 35px;
+        margin-top: 0;
     }
 
     #aboutme-text, #contact-text {
@@ -550,6 +565,11 @@ p {
 
     #decode-logo, #ctf-logo, #hackathon-logo {
         margin: 0;
+    }
+
+    #contact-button {
+        width: 70px;
+        font-size: 15px;
     }
 
 }
