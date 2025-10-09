@@ -1,6 +1,6 @@
 /* 
     COLOR PALETTE: Soft Lavender https://coolors.co/palette/eae8ff-d8d5db-adacb5-2d3142-b0d7ff
-    #bod7ff: blue (#77bbff?)
+    ##77bbff: blue
     #d8d5db: dark blue
     #adacb5: light gray
     #2d3142: dark gray
@@ -291,6 +291,14 @@ p {
     box-shadow: 10px 10px 0px 0px #eae8ff;    
 }
 
+#contact-button:hover {
+    background-color: white;
+    color: #2d3142;
+    box-shadow: 10px 10px 0px 0px #2d3142; /* TODO: fade in effect*/  
+    cursor: pointer;     
+}
+
+
 @media only screen and (max-width: 1126px) {
 
     /* TOP */
@@ -571,5 +579,4 @@ p {
         width: 70px;
         font-size: 15px;
     }
-
 }

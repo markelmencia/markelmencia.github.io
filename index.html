@@ -18,11 +18,24 @@
         <header>
             <nav>
                 <ul>
-                    <li id="logo-li">
-                        <img src="img/logo.png" alt="Logo" id="logo-nav">
+
+                    <li>
+                        <a href="index.html" class="a-header" id="a-logo">
+                            <img src="img/logo.png" alt="Logo" id="logo-nav">
+                        </a>    
                     </li>
-                    <li>Projects</li>
-                    <li>Contact</li>
+                    
+                    <li>
+                        <a href="projects.html" class="a-header">
+                            Projects
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="contact.html" class="a-header">
+                            Contact
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </header>
@@ -144,13 +157,15 @@
                 </div>
             </div>
 
-            <div id="contact" class="section">
+            <div id ="contact" class="section">
                 <h3 id="contact-braile" class="section-braile">⠉⠕⠝⠞⠁⠉⠞ ⠍⠑</h3>
                 <h2 id="contact-title" class="section-title">Contact me</h2>           
                 <p id="contact-text">
                     If you have any inquiry, question or project idea, be sure to contact me!
                 </p>
-                <div id="contact-button">Contact</div>
+                <a href="contact.html">
+                    <div id="contact-button">Contact</div>
+                </a>
             </div>
         </main>
 
@@ -164,8 +179,18 @@
         -->
 
         <footer>
-            <p>Markel Mencía, 2025</p>
-            <a href="https://github.com/markelmencia/markelmencia.github.io" target="_blank">Website source code</a>
+            <div id="footer-left">
+                <p id="footer-markel">Markel Mencía, 2025</p>
+                <a href="https://github.com/markelmencia/" target="_blank">
+                    <img src="img/github.svg" alt="Github icon" class="footer-icon">
+                </a>
+
+                <a href="https://www.linkedin.com/in/markel-mencía-ramírez-893867347" target="_blank">
+                    <img src="img/linkedin.svg" alt="LinkedIn icon" class="footer-icon">
+                </a>
+            </div>
+            
+            <a id="a-footer" href="https://github.com/markelmencia/markelmencia.github.io" target="_blank">Website source code</a>
         </footer>
     </body>
 </html>
