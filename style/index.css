@@ -15,20 +15,28 @@
     font-style: normal;
 }
 
-body {
-    background-color: #eae8ff;
-    background-image: url("../img/bg.jpg");
-    background-size: 100% auto;
+p {
+    margin: 10px;
+    font-size: 20px;
 }
 
+h1 {
+    color: #eae8ff;
+    font-size: 100px;
+}
+
+body {
+    background-image: url("../img/bg.jpg");
+    background-size: 100%;
+}
+
+/* TOP */
 #top-main {
     background-color: #2d3142;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
-
-
 
 #top-radius {
     background-color: #2d3142;
@@ -37,55 +45,21 @@ body {
 }
 
 #top-main-text {
-    width: 60%;
-}
-
-#logo {
-    right: 0;
-}
-
-h1 {
-    color: #eae8ff;
-    font-size: 100px;
-}
-
-h3 {
-    color: #adacb5;
-    font-size: 35px;
-}
-
-h2 {
-    color: #adacb5;
-    font-size: 60px;
-}
-
-#top-main-text {
     padding-top: 20%;
     padding-bottom: 5%;
     padding-left: 5%;
 }
 
-#name {
-    
-    color: #eae8ff;
-    font-size: 100px;
+#name {   
     margin-top: -20px;
 }
 
-.section {
-    padding: 15px;
-}
-
-.section-braile {
+#degree {
     color: #eae8ff;
-    opacity: 70%;
+    font-size: 30px;
 }
 
-.section-title {
-    color: #eae8ff;
-}
-
-#aboutme {
+.blue-section {
     background-color: #77bbff;
     margin: 40px;
     margin-left: 10%;
@@ -95,33 +69,42 @@ h2 {
     padding: 50px;
 }
 
-#aboutme-title {
+.blue-section-title {
     text-align: center;
     margin-top: -30px;
-    
 }
 
-#aboutme-braile {
+.blue-section-braille {
     text-align: center;
     margin-left: 200px; 
 }
 
-p {
-    margin: 10px;
-    font-size: 20px;
+.section-braille {
+    color: #eae8ff;
+    opacity: 70%;
+    font-size: 35px;
 }
 
-#skills {
+.section-title {
+    font-size: 60px;
+    color: #eae8ff;
+}  
+
+#skills, #participation {
     background-color: #2d3142;
     color: white;
-    border-top-right-radius: 20px;
-    border-bottom-right-radius: 20px;
-    margin-right: 20%;
     padding: 50px;
 }
 
-.skill-title {
+#skills {
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    margin-right: 20%;
+}
+
+.section-subtitle {
     color: #eae8ff;
+    font-size: 30px;
 }
 
 #skills-title {
@@ -130,28 +113,23 @@ p {
     margin-right: 5px;
 }
 
-#skills-braile {
+#skills-braille {
     text-align: end;
     margin-right: 40px;
 }
 
-.skills-section {
+.skills-section, .participation-section {
     display: flex;
     align-items: center;
+}
+
+.skills-info-right {
+    text-align: end;
 }
 
 #golang-logo {
     width: 270px;
     margin-right: 40px    
-}
-
-#golang-info {
-    margin-right: 10%;
-}
-
-#java-info {
-    text-align: end;
-    margin-left: 10%;
 }
 
 #java-logo {
@@ -163,15 +141,6 @@ p {
     width: 150px;
     margin-right: 75px;
     margin-left: 80px;
-}
-
-#db-info {
-    margin-right: 10%;
-}
-
-#python-info {
-    text-align: end;
-    margin-left: 10%;
 }
 
 #python-logo {
@@ -199,34 +168,24 @@ p {
     margin-right: 40px;
 }
 
-#ccpp-info {
-    margin-right: 10%;
-}
-
 #participation {
-    background-color: #2d3142;
-    color: white;
     border-top-left-radius: 20px;
     border-bottom-left-radius: 20px;
     margin-left: 20%;
     margin-top: 40px;
-    padding: 50px;
 }
 
-#participation-braile {
+.participation-info-right {
+    text-align: end;
+}
+
+#participation-braille {
     margin-left: 55px;
 }
 
 #participation-title {
     margin-top: -20px;
     margin-bottom: 40px;
-}
-
-.participation-section {
-    margin: 40px;
-    display: flex;
-    align-items: center;
-    text-align: end;
 }
 
 #decode-logo {
@@ -252,34 +211,6 @@ p {
     margin-left: 30px;
 }
 
-#hackathon-section {
-    margin-bottom: 0;
-}
-
-#contact {
-    background-color: #77bbff;
-    margin: 40px;
-    margin-left: 25%;
-    margin-right: 25%;
-    border-radius: 20px;
-    text-align: center;
-    padding: 50px;
-}
-
-#contact-title {
-    text-align: center;
-    margin-top: -30px;
-}
-
-#contact-braile {
-    text-align: center;
-    margin-left: 200px; 
-}
-
-#contact-text {
-    font-size: 20px;
-}
-
 #contact-button {
     margin-top: 10px;
     font-size: 25px;
@@ -294,7 +225,7 @@ p {
 #contact-button:hover {
     background-color: white;
     color: #2d3142;
-    box-shadow: 10px 10px 0px 0px #2d3142; /* TODO: fade in effect*/  
+    box-shadow: 10px 10px 0px 0px #2d3142; /* TODO: fade in effect */  
     cursor: pointer;     
 }
 
@@ -312,10 +243,8 @@ p {
     }
 
     #top-main {
-        flex-direction: column-reverse; /* AGI */
+        flex-direction: column-reverse; /* TODO: AGI */
         text-align: center;
-        align-items: center;
-        width: 100%;
     }
 
     #logo {
@@ -334,14 +263,18 @@ p {
     }
 
     /* ABOUT ME */
-    #aboutme-braile, #contact-braile {
+    .blue-section-braille {
         font-size: 27px;
         margin-left: 0;
     }
 
-    #aboutme-title, #contact-title {
+    .blue-section-title {
         font-size: 45px;
         margin-top: -20px;
+    }
+
+    .skills-info-right {
+        text-align: start;
     }
 
     /* SKILLS */
@@ -349,8 +282,8 @@ p {
         margin-right: 10%;
     }
 
-    .skill-title {
-        font-size: 40px
+    .section-subtitle {
+        font-size: 20px
     }
 
     #golang-logo {
@@ -360,37 +293,32 @@ p {
     #skills-java {
         flex-direction: row-reverse;
     }
-
-    #java-info {
-        text-align: start;
-        margin-left: 0;
-    }
-
+    
     #java-logo {
         margin-left: 40px;
         margin-right: 45px;
+        margin-top: 10px;
         width: 150px;
     }
 
     #db-logo {
         margin-left: 60px;
+        margin-top: 30px;
+        margin-bottom: 30px;
         width: 110px;
-    }
-
-    #python-info {
-        text-align: start;
-        margin-left: 0;
     }
 
     #python-logo {
         margin-left: 55px;
         margin-right: 70px;
         width: 120px;
+        margin-bottom: 0px;
     }
 
     #c-logo {
         margin-left: 15px;
         width: 100px;
+        margin-top: 0px;
     }
 
     #skills-python {
@@ -413,22 +341,17 @@ p {
 
     .participation-section {
         justify-content: space-between;
-    }
-
-    .skill-title {
-        font-size: 40px
-    }
-
-    #participation-ctf {
-        flex-direction: row-reverse;
+        text-align: end;
     }
 
     #ctf-info {
+        flex-direction: row-reverse;
         text-align: end;
     }
 
     #decode-logo {
         width: 120px;
+        margin-bottom: 30px;
     }
 
     #hackathon-logo {
@@ -452,14 +375,13 @@ p {
     /* TOP */
     #name {
         font-size: 45px;
-        margin-top: -5px;
     }
 
     #degree {
         font-size: 15px;
     }
 
-    #name-braile {
+    #name-braille {
         font-size: 15px;
     }
 
@@ -474,25 +396,25 @@ p {
     }
 
     /* ABOUT ME */
-    #aboutme, #contact {
+    .blue-section {
         padding: 30px;
     }
 
-    #aboutme-braile, #contact-braile {
+    .blue-section-braille {
         font-size: 15px;
     }
 
-    #aboutme-title, #contact-title {
+    .blue-section-title {
         font-size: 35px;
         margin-top: 0;
     }
 
-    #aboutme-text, #contact-text {
+    .blue-section-text {
         font-size: 15px;
     }
 
     /* SKILLS */
-    #skills-braile {
+    #skills-braille {
         font-size: 15px;
         margin-right: 0;
     }
@@ -508,24 +430,12 @@ p {
         text-align: center;
     }
 
-    #golang-info {
-        margin: 0;
-    }
-
-    #skills-java {
-        flex-direction: column-reverse;
-    }
-
-    #java-info {
+    .skills-info-right {
         text-align: center;
     }
 
-    #skills-python {
+    #skills-java, #skills-python {
         flex-direction: column-reverse;
-    }
-    
-    #python-info {
-        text-align: center;
     }
 
     #golang-logo, #java-logo, #db-logo, #python-logo, #c-logo, #cpp-logo {
@@ -538,16 +448,8 @@ p {
         margin-right: 20px;
     }
 
-    #ccpp-info {
-        margin-right: 0;
-    }
-
-    #db-info {
-        margin-right: 0;
-    }
-
     /* PARTICIPATION */
-    #participation-braile {
+    #participation-braille {
         font-size: 15px;
         margin-left: 0;
     }
@@ -560,19 +462,24 @@ p {
 
     .participation-section {
         flex-direction: column-reverse;
+        
+    }
+
+    .participation-info-right {
         text-align: center;
     }
 
-    #participation-ctf {
-        flex-direction: column;
-    }
-
     #ctf-info {
+        flex-direction: column;
         text-align: center;
     }
 
     #decode-logo, #ctf-logo, #hackathon-logo {
         margin: 0;
+    }
+
+    #decode-logo {
+        margin-bottom: 20px;
     }
 
     #contact-button {
