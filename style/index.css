@@ -242,11 +242,6 @@ body {
         font-size: 30px;
     }
 
-    #top-main {
-        flex-direction: column-reverse; /* TODO: AGI */
-        text-align: center;
-    }
-
     #logo {
         width: 400px;
         height: 400px;

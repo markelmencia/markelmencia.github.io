@@ -1,0 +1,6 @@
+@media only screen and (max-width: 1126px) {
+    #top-main {
+        flex-direction: column-reverse;
+        text-align: center;
+    }
+}
