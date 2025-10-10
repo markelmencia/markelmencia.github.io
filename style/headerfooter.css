@@ -30,25 +30,21 @@ li {
     font-size: 25px;
 }
 
-.a-header:hover {
-    background-color: #2d3142;
-    color: white;
-}
-
 #logo-nav {
     height: 50px;
     width: 50px;
     display: block;
 }
 
-#a-logo {
+
+.a-header:hover, #logo-nav:hover, #a-logo:hover {
     background-color: #2d3142;
-    padding-left: 5px;
-    padding-right: 5px;
+    color: white;
 }
 
-#a-logo:hover {
-    background-color: white;
+#a-logo {
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
 footer {
@@ -80,6 +76,11 @@ footer {
     text-align: right;
 }
 
+.selected {
+    background-color: #2d3142;
+    color: white;
+}
+
 @media only screen and (max-width: 885px) {
     #logo-nav {
         height: 40px;
@@ -99,7 +100,6 @@ footer {
 
     li {
         padding: 0;
-        font-size: 20px;
-        
+        font-size: 20px;  
     }
 }
