@@ -9,12 +9,7 @@
 body {
     background-image: url("../img/bg.jpg");
     background-size: 100%;
-}
-
-h3 {
-    color: #eae8ff;
-    opacity: 70%;
-    font-size: 35px;
+    height: 100%;
 }
 
 h1 {
@@ -23,17 +18,42 @@ h1 {
     color: #eae8ff;
 }
 
+h2 {
+    color: white;
+    font-size: 72px;
+}
+
+h3 {
+    color: #eae8ff;
+    opacity: 70%;
+    font-size: 35px;
+}
+
 h4 {
     margin-top: 20px;
-    font-size: 16px;
+    font-size: 20px;
     text-align: center;
     color: #eae8ff;
+}
+
+p {
+    color: white;
+}
+
+td {
+    width: 40%;
 }
 
 #projects-title {
     background-color: #2d3142;
     margin: 0 auto;
-    padding-top: 100px;
+    padding-top: 70px;
+}
+
+.project-header {
+    text-align: center;
+    margin: auto auto;
+    margin-right: 20px;
 }
 
 #title-braille {
@@ -46,7 +66,137 @@ h4 {
 }
 
 #top-radius {
-    height: 100px;
+    height: 60px;
     border-bottom-right-radius: 100%;
     background-color: #2d3142;
+}
+
+.more-button {
+    background-color: white;
+    color: #2d3142;
+    box-shadow: 10px 10px 0px 0px #77bbff; /* TODO: fade in effect */  
+    cursor: pointer;
+    display: inline-block;
+    padding: 10px;
+    width: 120px;
+    text-align: center;
+    font-size: 25px;
+}
+
+.more-button:hover {
+    color: white;
+    box-shadow: 10px 10px 0px 0px white;
+    background-color: #77bbff;
+}
+
+#projects-section {
+    background-color: #2d3142cb;
+    border-radius: 20px;
+    width: 60%;
+    margin: 0 auto;
+    margin-top: 20px;
+    margin-bottom: 25px;
+}
+
+table {
+    margin: 0 auto;
+}
+
+.project {
+    display: flex;
+    margin: 40px;
+    justify-content: center;
+}
+
+#gnu-linux-title {
+    font-size: 40px;
+}
+
+#rvik-header {
+    margin-left: 45px;
+    margin-right: 65px;
+}
+
+/* 1566 */
+@media only screen and (max-width: 1566px) {
+    .project {
+        display: block;
+    }
+
+    .project-header {
+        margin-bottom: 20px;
+    }
+
+    p {
+        text-align: center;
+    }
+}
+
+@media only screen and (max-width: 1191px) {
+    h2 {
+        font-size: 35px;
+    }
+
+    #gnu-linux-title {
+        font-size: 20px;
+    }
+
+    .more-button {
+        font-size: 15px;
+        width: 80px;
+    }
+
+    p {
+        font-size: 14px;
+    }
+
+    .project {
+        margin: 20px;
+    }
+}
+
+@media only screen and (max-width: 727px) {
+    h2 {
+        font-size: 20px;
+    }
+
+    h3 {
+        font-size: 20px;
+    }
+
+    #title-braille {
+        margin-left: 190px;
+        margin-bottom: 10px;
+    }
+
+    h1 {
+        font-size: 70px;
+    }
+
+    h4 {
+        font-size: 15px;
+        margin-top: 5px;
+    }
+
+    #gnu-linux-title {
+        font-size: 15px;
+    }
+
+    .more-button {
+        font-size: 10px;
+        width: 60px;
+        padding: 3px;
+    }
+
+    p {
+        font-size: 14px;
+    }
+
+    .project {
+        margin: 10px;
+    }
+
+    #projects-section {
+        width: 80%;
+    }
 }

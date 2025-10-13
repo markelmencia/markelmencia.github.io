@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style/headerfooter.css">
     <link rel="stylesheet" href="style/projects.css">
 
-    <link rel="icon" type="image/x-icon" href="/img/logo.png">
+    <link rel="icon" type="image/x-icon" href="img/logo.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,14 +48,67 @@
                 My Projects
             </h1>
             <h4>
-                This is some of the personal work I've done over time. Even though I'd love to show more of my projects, these are the ones I'm the most proud of.
+                This is some of the personal work I've done over time.
             </h4>
         </div>
         <div id="top-radius"></div>
+
+        <div id="projects-section">
+            <table>
+                <tr>
+                    <td>
+                        <div class="project">
+                            <div class="project-header">
+                                <h2>gochat</h2>
+                                <a href="https://github.com/sprinter05/gochat" target="_blank">
+                                    <div class="more-button">See more</div>
+                                </a>
+                            </div>
+                            <p>gochat is a light, TCP-based Client-Server chat application that runs its own application protocol. Programmed in Golang, this is the project I've spent the most time on. I made it with my friend Sprinter, and it took dozens of hours of designing and coding.</p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="project">
+                            <div class="project-header" id="rvik-header">
+                                <h2>rvik</h2>
+                                <a href="https://github.com/markelmencia/rvik" target="_blank">
+                                    <div class="more-button">See more</div>
+                                </a>
+                            </div>
+                            <p>rvik is my own RV32i variant simulator and assembler implementation. This project includes a text editor programmed in Java that is able to assemble RV32i instructions. The project has had multiple version and refactors, and it's been a key part in my learning of OOP development.</p>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <div class="project">
+                            <div class="project-header">
+                                <h2>LITE-16</h2>
+                                <a href="https://github.com/markelmencia/lite-16" target="_blank">
+                                    <div class="more-button">See more</div>
+                                </a>
+                            </div>
+                            <p>LITE-16 is a 16-bit Instruction Set Architecture designed entirely by me in Verilog. It is inspired in the RISC-V ISA, and it aims to be as straight-forward as possible. The project also includes a LITE-16 assembler programmed in C.</p>
+                        </div>
+                    </td>   
+                    <td>
+                        <div class="project">
+                            <div class="project-header">
+                                <h2 id="gnu-linux-title">0xDECODE: GNU-Linux</h2>
+                                <a href="https://github.com/markelmencia/0xdecode-gnulinux" target="_blank">
+                                    <div class="more-button">See more</div>
+                                </a>
+                            </div>
+                            <p>This project is a free, open-source course on the fundamentals of the GNU/Linux operative system. It was done as a resource for 0xDECODE, the university group I'm involved in. The course contains a full book written by me in spanish, and a set of exercises to put in practice the content of the book.</p>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </main>
 
-    <!--
-         <footer>
+    <footer>
         <div id="footer-left">
             <p id="footer-markel">Markel Mencía, 2025</p>
             <a href="https://github.com/markelmencia/" target="_blank">
@@ -69,6 +122,5 @@
             
         <a id="a-footer" href="https://github.com/markelmencia/markelmencia.github.io" target="_blank">Website source code</a>
     </footer>
-    -->
 </body>
 </html>
