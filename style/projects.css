@@ -121,7 +121,56 @@ table {
     margin-right: 65px;
 }
 
-/* 1566 */
+#current-work {
+    background-color: #77bbff;
+    margin: 0 auto;
+    width: 50%;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+#current-work-title {
+    color: white;
+    text-align: center;
+    font-size: 45px;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    opacity: 100%;
+}
+
+#current-work-braille {
+    text-align: center;
+    margin-left: 160px;
+    font-size: 20px;
+    opacity: 100%;
+}
+
+.black-p {
+    color: black;
+    font-size: 20px;
+}
+
+#more-button-current {
+    background-color: #2d3142;
+    color: white;
+    box-shadow: 10px 10px 0px 0px #eae8ff; /* TODO: fade in effect */  
+    cursor: pointer;
+    display: block;
+    padding: 10px;
+    width: 120px;
+    text-align: center;
+    font-size: 25px;
+    margin: 0 auto;
+    margin-top: 10px;
+}
+
+#more-button-current:hover {
+    background-color: #eae8ff;
+    color: #2d3142;
+    box-shadow: 10px 10px 0px 0px #2d3142; /* TODO: fade in effect */  
+}
+
 @media only screen and (max-width: 1566px) {
     .project {
         display: block;
@@ -203,54 +252,8 @@ table {
     #projects-section {
         width: 80%;
     }
-}
-
-#current-work {
-    background-color: #77bbff;
-    margin: 0 auto;
-    width: 50%;
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 25px;
-}
-
-#current-work-title {
-    color: white;
-    text-align: center;
-    font-size: 45px;
-    margin-top: -10px;
-    margin-bottom: 10px;
-    opacity: 100%;
-}
-
-#current-work-braille {
-    text-align: center;
-    margin-left: 160px;
-    font-size: 20px;
-    opacity: 100%;
-}
-
-.black-p {
-    color: black;
-    font-size: 20px;
-}
-
-#more-button-current {
-    background-color: #2d3142;
-    color: white;
-    box-shadow: 10px 10px 0px 0px #eae8ff; /* TODO: fade in effect */  
-    cursor: pointer;
-    display: block;
-    padding: 10px;
-    width: 120px;
-    text-align: center;
-    font-size: 25px;
-    margin: 0 auto;
-    margin-top: 10px;
-}
-
-#more-button-current:hover {
-    background-color: #eae8ff;
-    color: #2d3142;
-    box-shadow: 10px 10px 0px 0px #2d3142; /* TODO: fade in effect */  
+    
+    #current-work-braille {
+        margin-left: 0;
+    }
 }
