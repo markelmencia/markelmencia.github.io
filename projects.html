@@ -1,147 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projects - Markel Mencía</title>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Projects - Markel Mencía</title>
 
-    <link rel="stylesheet" href="style/headerfooter.css">
-    <link rel="stylesheet" href="style/projects.css">
-    <link rel="stylesheet" href="style/chatgpt.css">
+        <link rel="stylesheet" href="style/headerfooter.css">
+        <link rel="stylesheet" href="style/projects.css">
+        <link rel="stylesheet" href="style/chatgpt.css">
 
 
-    <link rel="icon" type="image/x-icon" href="img/logo.png">
+        <link rel="icon" type="image/x-icon" href="img/logo.png">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
-</head>
-<body id="projects-body">
-    <header>
-        <nav>
-            <ul>
-                <li>
-                    <a href="index.html" class="a-header" id="a-logo">
-                        <img src="img/logo.png" alt="Logo" id="logo-nav">
-                    </a>    
-                </li>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+    </head>
+
+    <body id="projects-body">
+        <header>
+            <nav>
+                <ul>
+                    <li>
+                        <a href="index.html" class="a-header" id="a-logo">
+                            <img src="img/logo.png" alt="Logo" id="logo-nav">
+                        </a>    
+                    </li>
+                    
+                    <li>
+                        <a href="projects.html" class="a-header selected">
+                            Projects
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="contact.html" class="a-header">
+                            Contact
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div id="projects-title">
+                <h3 id="title-braille">
+                    ⠍⠽ ⠏⠗⠕⠚⠑⠉⠞⠎
+                </h3>
+                <h1 id="title">
+                    My Projects
+                </h1>
+                <h4>
+                    This is some of the personal work I've done over time.
+                </h4>
+            </div>
+            <div id="top-radius"></div>
+
+            <div id="projects-section">
+                <table>
+                    <tr>
+                        <td>
+                            <div class="project">
+                                <div class="project-header">
+                                    <h2>gochat</h2>
+                                    <a href="https://github.com/sprinter05/gochat" target="_blank">
+                                        <div class="more-button">See more</div>
+                                    </a>
+                                </div>
+                                <p>gochat is a light, TCP-based Client-Server chat application that runs its own application protocol. Programmed in Golang, this is the project I've spent the most time on. I made it with my friend Sprinter, and it took dozens of hours of designing and coding.</p>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="project">
+                                <div class="project-header" id="rvik-header">
+                                    <h2>rvik</h2>
+                                    <a href="https://github.com/markelmencia/rvik" target="_blank">
+                                        <div class="more-button">See more</div>
+                                    </a>
+                                </div>
+                                <p>rvik is my own RV32i variant simulator and assembler implementation. This project includes a text editor programmed in Java that is able to assemble RV32i instructions. The project has had multiple version and refactors, and it's been a key part in my learning of OOP development.</p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>
+                            <div class="project">
+                                <div class="project-header">
+                                    <h2>LITE-16</h2>
+                                    <a href="https://github.com/markelmencia/lite-16" target="_blank">
+                                        <div class="more-button">See more</div>
+                                    </a>
+                                </div>
+                                <p>LITE-16 is a 16-bit Instruction Set Architecture designed entirely by me in Verilog. It is inspired in the RISC-V ISA, and it aims to be as straight-forward as possible. The project also includes a LITE-16 assembler programmed in C.</p>
+                            </div>
+                        </td>   
+                        <td>
+                            <div class="project">
+                                <div class="project-header">
+                                    <h2 id="gnu-linux-title">0xDECODE: GNU-Linux</h2>
+                                    <a href="https://github.com/markelmencia/0xdecode-gnulinux" target="_blank">
+                                        <div class="more-button">See more</div>
+                                    </a>
+                                </div>
+                                <p>This project is a free, open-source course on the fundamentals of the GNU/Linux operative system. It was done as a resource for 0xDECODE, the university group I'm involved in. The course contains a full book written by me in spanish, and a set of exercises to put in practice the content of the book.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div id="current-work">
+                <h3 id="current-work-braille">⠉⠥⠗⠗⠑⠝⠞ ⠏⠗⠕⠚⠑⠉⠞</h3>
+                <h3 id="current-work-title">Current project</h3>
+                <p class="black-p">
+                    Lately I've been interested in parallel environments and in the way in which they help improve the performance of certain computational activities. Since I've always had an interest in compression algorithms, this is a perfect excuse to work with them.
+                </p>
+                <br>
+                <p class="black-p">
+                    One my current projects is to investigate about the performance of parallel computing (with tools like CUDA) on compression algorithms. There's already published work about this topic, but it is an area I'd like to investigate by myself. Being a complete beginner on both compression algorithms and parallel computing, I'm sure it'll be no easy task, but I'm making some progress on it.
+                </p>
+                <br>
+                <p class="black-p">
+                    You can check what I'm up to on this project on its GitHub repository:
+                </p>
+                <a href="https://github.com/markelmencia/perf-compression-cuda" target="_blank">
+                    <div id="more-button-current">See more</div>
+                </a>
+            </div>
+        </main>
+
+        <footer>
+            <div id="footer-left">
+                <p id="footer-markel">Markel Mencía, 2025</p>
+                <a href="https://github.com/markelmencia/" target="_blank">
+                    <img src="img/github.svg" alt="Github icon" class="footer-icon">
+                </a>
+
+                <a href="https://www.linkedin.com/in/markel-mencía-ramírez-893867347" target="_blank">
+                    <img src="img/linkedin.svg" alt="LinkedIn icon" class="footer-icon">
+                </a>
+            </div>
                 
-                <li>
-                    <a href="projects.html" class="a-header selected">
-                        Projects
-                    </a>
-                </li>
-
-                <li>
-                    <a href="contact.html" class="a-header">
-                        Contact
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    </header>
-
-    <main>
-        <div id="projects-title">
-            <h3 id="title-braille">
-                ⠍⠽ ⠏⠗⠕⠚⠑⠉⠞⠎
-            </h3>
-            <h1 id="title">
-                My Projects
-            </h1>
-            <h4>
-                This is some of the personal work I've done over time.
-            </h4>
-        </div>
-        <div id="top-radius"></div>
-
-        <div id="projects-section">
-            <table>
-                <tr>
-                    <td>
-                        <div class="project">
-                            <div class="project-header">
-                                <h2>gochat</h2>
-                                <a href="https://github.com/sprinter05/gochat" target="_blank">
-                                    <div class="more-button">See more</div>
-                                </a>
-                            </div>
-                            <p>gochat is a light, TCP-based Client-Server chat application that runs its own application protocol. Programmed in Golang, this is the project I've spent the most time on. I made it with my friend Sprinter, and it took dozens of hours of designing and coding.</p>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="project">
-                            <div class="project-header" id="rvik-header">
-                                <h2>rvik</h2>
-                                <a href="https://github.com/markelmencia/rvik" target="_blank">
-                                    <div class="more-button">See more</div>
-                                </a>
-                            </div>
-                            <p>rvik is my own RV32i variant simulator and assembler implementation. This project includes a text editor programmed in Java that is able to assemble RV32i instructions. The project has had multiple version and refactors, and it's been a key part in my learning of OOP development.</p>
-                        </div>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>
-                        <div class="project">
-                            <div class="project-header">
-                                <h2>LITE-16</h2>
-                                <a href="https://github.com/markelmencia/lite-16" target="_blank">
-                                    <div class="more-button">See more</div>
-                                </a>
-                            </div>
-                            <p>LITE-16 is a 16-bit Instruction Set Architecture designed entirely by me in Verilog. It is inspired in the RISC-V ISA, and it aims to be as straight-forward as possible. The project also includes a LITE-16 assembler programmed in C.</p>
-                        </div>
-                    </td>   
-                    <td>
-                        <div class="project">
-                            <div class="project-header">
-                                <h2 id="gnu-linux-title">0xDECODE: GNU-Linux</h2>
-                                <a href="https://github.com/markelmencia/0xdecode-gnulinux" target="_blank">
-                                    <div class="more-button">See more</div>
-                                </a>
-                            </div>
-                            <p>This project is a free, open-source course on the fundamentals of the GNU/Linux operative system. It was done as a resource for 0xDECODE, the university group I'm involved in. The course contains a full book written by me in spanish, and a set of exercises to put in practice the content of the book.</p>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-        </div>
-
-        <div id="current-work">
-            <h3 id="current-work-braille">⠉⠥⠗⠗⠑⠝⠞ ⠏⠗⠕⠚⠑⠉⠞</h3>
-            <h3 id="current-work-title">Current project</h3>
-            <p class="black-p">
-                Lately I've been interested in parallel environments and in the way in which they help improve the performance of certain computational activities. Since I've always had an interest in compression algorithms, this is a perfect excuse to work with them.
-            </p>
-            <br>
-            <p class="black-p">
-                One my current projects is to investigate about the performance of parallel computing (with tools like CUDA) on compression algorithms. There's already published work about this topic, but it is an area I'd like to investigate by myself. Being a complete beginner on both compression algorithms and parallel computing, I'm sure it'll be no easy task, but I'm making some progress on it.
-            </p>
-            <br>
-            <p class="black-p">
-                You can check what I'm up to on this project on its GitHub repository:
-            </p>
-            <a href="https://github.com/markelmencia/perf-compression-cuda" target="_blank">
-                <div id="more-button-current">See more</div>
-            </a>
-        </div>
-    </main>
-
-    <footer>
-        <div id="footer-left">
-            <p id="footer-markel">Markel Mencía, 2025</p>
-            <a href="https://github.com/markelmencia/" target="_blank">
-                <img src="img/github.svg" alt="Github icon" class="footer-icon">
-            </a>
-
-            <a href="https://www.linkedin.com/in/markel-mencía-ramírez-893867347" target="_blank">
-                <img src="img/linkedin.svg" alt="LinkedIn icon" class="footer-icon">
-            </a>
-        </div>
-            
-        <a id="a-footer" href="https://github.com/markelmencia/markelmencia.github.io" target="_blank">Website source code</a>
-    </footer>
-</body>
+            <a id="a-footer" href="https://github.com/markelmencia/markelmencia.github.io" target="_blank">Website source code</a>
+        </footer>
+    </body>
 </html>
