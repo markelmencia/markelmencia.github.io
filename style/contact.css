@@ -1,0 +1,186 @@
+* {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-family: "Red Hat Display", sans-serif;
+    font-style: normal;
+}
+
+body {
+    background-image: url("../img/bg.jpg");
+    background-size: 100%;
+    height: 100%;
+}
+
+h1 {
+    font-size: 100px;
+    text-align: center;
+    color: #eae8ff;
+}
+
+h2 {
+    color: white;
+    font-size: 50px;
+    margin-top: -10px;
+    text-align: center;
+}
+
+h3 {
+    color: #eae8ff;
+    opacity: 70%;
+    font-size: 35px;
+}
+
+h4 {
+    color: #eae8ff;
+    opacity: 70%;
+    font-size: 20px;
+    margin-left: 300px;
+    text-align: center;
+}
+
+td {
+    width: 40%;
+}
+
+a {
+    text-decoration: none;
+}
+
+#contact-title {
+    background-color: #2d3142;
+    margin: 0 auto;
+    padding-top: 70px;
+}
+
+#title-braille {
+    text-align: center;
+    margin-left: 350px;
+}
+
+#title {
+    margin-top: -30px;
+}
+
+#top-radius {
+    height: 60px;
+    border-bottom-right-radius: 100%;
+    background-color: #2d3142;
+}
+
+#contact-section {
+    background-color: #2d3142cb;
+    border-radius: 20px;
+    width: 60%;
+    margin: 0 auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 30px;
+}
+
+.contact-p {
+    color: white;
+    font-size: 25px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+label {
+    color: white;
+}
+
+textarea {
+    width: 100%;
+    height: 100px;
+    border-radius: 10px;
+    padding: 5px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#submit {
+    background-color: white;
+    display: block;
+    margin: 0 auto;
+    color: #2d3142;
+    box-shadow: 10px 10px 0px 0px #77bbff; /* TODO: fade in effect */  
+    cursor: pointer;
+    display: block;
+    padding: 10px;
+    width: 120px;
+    text-align: center;
+    font-size: 25px;
+    margin: 0 auto;
+    margin-top: 10px;
+}
+
+#submit:hover {
+    background-color: #77bbff;
+    box-shadow: 10px 10px 0px 0px white;
+    color: white;
+}
+
+.textfield {
+    height: 20px;
+    border-radius: 10px;
+    padding: 5px;
+    margin-bottom: 10px;
+    width: 15%;
+    min-width: 80px;
+}
+
+#date-limit {
+    height: 25px;
+    font-size: 15px;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+label {
+    font-size: 20px;
+}
+
+#datediv {
+    margin-bottom: 10px;
+}
+
+select {
+    font-size: 20px;
+    background-color: white;
+    border-radius: 10px;
+    padding: 5px;
+    width: 15%;
+    min-width: 80px;
+}
+
+#contact-reason-div {
+    margin-bottom: 10px;
+}
+
+#project-idea-label {
+    margin-right: 10px;
+}
+
+@media only screen and (max-width: 685px) {
+    h2 {
+        font-size: 20px;
+        margin: 0;
+    }
+
+    h4 {
+        font-size: 10px;
+        margin-left: 0;
+    }
+
+    .contact-p {
+        font-size: 15px;
+    }
+
+    label {
+        font-size: 15px;
+    }
+
+    select {
+        font-size: 15px;
+    }
+}
