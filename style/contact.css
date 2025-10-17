@@ -183,4 +183,14 @@ select {
     select {
         font-size: 15px;
     }
+
+    #title {
+        font-size: 40px;
+        margin: 0;
+    }
+
+    #title-braille {
+        font-size: 30px;
+        margin: 0;
+    }
 }
