@@ -4,3 +4,24 @@
         text-align: center;
     }
 }
+
+#index-body {
+    animation: moveUp 100s linear infinite;
+}
+
+#projects-body {
+    animation: moveUp 200s linear infinite;
+}
+
+#contact-body {
+    animation: moveUp 500s linear infinite;
+}
+
+@keyframes moveUp {
+    from {
+        background-position: center 0;
+    }
+    to {
+        background-position: center 100%;
+    }
+}
