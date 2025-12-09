@@ -1,0 +1,14 @@
+[
+    {
+        "name": "cubo",
+        "description": "A chess bot that intends to work on parallel GPU environments with CUDA.",
+        "tools": ["c", "cuda"],
+        "link": "https://github.com/markelmencia/cubo"
+    },
+    {
+        "name": "gogb",
+        "description": "A Game Boy emulator programmed in Go from scratch.",
+        "tools": ["go", "assembly"],
+        "link": "https://github.com/markelmencia/gogb"
+    }
+]

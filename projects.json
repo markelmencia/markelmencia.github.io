@@ -1,0 +1,27 @@
+[
+    {
+        "name": "gochat",
+        "description": "gochat is a light, TCP-based and TLS-capable client-server chat application that runs its own application protocol underneath. The project contains the protocol specification, implementation, and different interfaces to communicate with it. This project was made in collaboration with my friend Sprinter.",
+        "tools": ["go"],
+        "link": "https://github.com/Sprinter05/gochat"
+    },
+    {
+        "name": "LITE-16",
+        "description": "LITE-16 is a 16-bit RISC-based instruction set architecture inspired in part by the RV32I variant of the RISC-V ISA. It is implemented in Verilog, allowing FPGA (and similar) simulation and it contains its own assembler, along with the ISA documentation.",
+        "tools": ["verilog", "c", "assembly"],
+        "link": "https://github.com/markelmencia/LITE-16"
+    },
+    {
+        "name": "rvik",
+        "description": "rvik is an assembler and simulator for the RV32I variant of the RISC-V instruction set architecture. Along with assemmbly and simulation capacities, the project contains a text editor to write RV32I assembly code in, and simulate it afterwards in one go.",
+        "tools": ["java", "risc-v", "assembly"],
+        "link": "https://github.com/markelmencia/rvik"
+    },
+    {
+        "name": "Fundamentos de GNU/Linux",
+        "description": "A preliminary course in spanish about the fundamentals of the GNU/Linux operative system, with a book written by me, and a few exercises to test the book's content.",
+        "tools": ["gnu/linux"],
+        "link": "https://github.com/markelmencia/fundamentos-gnulinux"
+    }
+
+]
