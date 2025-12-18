@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/rss.js && next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -22,7 +22,9 @@
     "rehype-prism-plus": "^2.0.1",
     "rehype-stringify": "^10.0.1",
     "remark": "^15.0.1",
+    "remark-html": "^16.0.1",
     "remark-rehype": "^11.1.2",
+    "rss": "^1.2.2",
     "tailwindcss": "^4.1.17"
   },
   "devDependencies": {

