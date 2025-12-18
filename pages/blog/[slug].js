@@ -1,41 +1,49 @@
-import React from "react"
-import fs from "fs"
-import matter from "gray-matter"
-import md from "markdown-it"
-import Header from "@/components/Header";
-import Head from "next/head"
+    import React from "react"
+    import fs from "fs"
+    import matter from "gray-matter"
+    import md from "markdown-it"
+    import Header from "@/components/Header"
+    import Head from "next/head"
+    import { remark } from 'remark'
+    import remarkRehype from 'remark-rehype'
+    import rehypePrism from 'rehype-prism-plus'
+    import rehypeStringify from 'rehype-stringify'
 
-export async function getStaticPaths() {
-    const files = fs.readdirSync("posts")
-    const paths = files.map((filename) => ({
-        params: {
-            slug: filename.replace(".md", "")
+    export async function getStaticPaths() {
+        const files = fs.readdirSync("posts")
+        const paths = files.map((filename) => ({
+            params: {
+                slug: filename.replace(".md", "")
+            }
+        }))
+
+        return {
+            paths, fallback: false
         }
-    }))
-
-    return {
-        paths, fallback: false
     }
-}
 
-export async function getStaticProps({params: {slug}}) {
-    const markdown =  fs.readFileSync(`posts/${slug}.md`)
-    const {data: frontMatter, content} = matter(markdown)
+    export async function getStaticProps({params: {slug}}) {
+        const markdown =  fs.readFileSync(`posts/${slug}.md`)
+        const {data: frontMatter, content} = matter(markdown)
 
-    return {props: {
-        frontMatter, content
-    }}
-}
+        const remarkContent = await remark().use(remarkRehype).use(rehypePrism, { showLineNumbers: true }).use(rehypeStringify).process(content)
 
-function Blog({frontMatter, content}) {
+        const contentString = remarkContent.toString()
 
-    return <div>
-        <Head>
-            <title>{`${frontMatter.title} - Markel Mencía`}</title>
-        </Head>
-        <Header />
-        <article className="prose dark:prose-invert prose-lg prose-a:var(--theme) max-w-none article-border" dangerouslySetInnerHTML={{__html: md().render(content)}}/>
-    </div>
-}
+        return {props: {
+            frontMatter, contentString
+        }}
+    }
 
-export default Blog
+    function Blog({frontMatter, contentString}) {
+
+        return <div>
+            <Head>
+                <title>{`${frontMatter.title} - Markel Mencía`}</title>
+            </Head>
+            <Header />
+            <article className="prose dark:prose-invert prose-lg prose-a:var(--theme) max-w-none article-border" dangerouslySetInnerHTML={{__html: contentString}}/>
+        </div>
+    }
+
+    export default Blog

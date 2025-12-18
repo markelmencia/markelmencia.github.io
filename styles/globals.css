@@ -3,7 +3,7 @@
 
 :root {
   --background: #ffffff;
-  --background-lighter: #aaaaaf;
+  --background-lighter: #f3f3f3;
   --foreground: #171717;
   --theme: #f78769;
   --default-width: 900px;
@@ -17,7 +17,7 @@
 .dark {
   --background: #2d2d2f;
   --foreground: #ededed;
-  --background-lighter: #4a4a4e;
+  --background-lighter: #343434;
   --theme: #c78d69;
 }
 
@@ -315,4 +315,30 @@ p {
   max-width: 900px;
   width: 100%;
   text-align: center;
+}
+
+.prose strong {
+  color: var(--foreground);
+}
+
+.prose pre {
+  background-color: var(--background-lighter);
+  color: var(--foreground);
+}
+
+.prose p code, .prose li code {
+  background-color: var(--background-lighter);
+  border-radius: 5px;
+  color: var(--foreground);
+  font-weight: 100;
+  padding: 4px;
+}
+
+.prose :not(pre) > code::before,
+.prose :not(pre) > code::after {
+  content: none;
+}
+
+.prose img {
+  margin: 0 auto;
 }
