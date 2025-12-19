@@ -5,6 +5,7 @@ import Link from "next/link"
 import fs from "fs"
 import matter from "gray-matter"
 import PostDescription from "@/components/PostDescription";
+import RSSComponent from "@/components/RSSComponent";
 
 
 export async function getStaticProps() {
@@ -48,6 +49,7 @@ export default function Home({recent_posts}) {
         </span>
       </div>
       <h1 className="page-title">Recent posts</h1>
+      <RSSComponent/>
       {recent_posts.map((post) => {
                   return (
                     <PostDescription key={post.slug} title={post.frontMatter.title} date={post.frontMatter.date} slug={post.slug} desc={post.frontMatter.description}

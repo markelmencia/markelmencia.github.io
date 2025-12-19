@@ -11,6 +11,6 @@ export default function Header() {
         <Link className="nav-item" href={"/blog/"}><li>Blogs</li></Link>
         <ThemeToggle />
         </ul>    
-        </nav>
+    </nav>
   )
 }

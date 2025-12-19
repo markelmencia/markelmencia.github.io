@@ -8,6 +8,7 @@
     import remarkRehype from 'remark-rehype'
     import rehypePrism from 'rehype-prism-plus'
     import rehypeStringify from 'rehype-stringify'
+import RSSComponent from "@/components/RSSComponent"
 
     export async function getStaticPaths() {
         const files = fs.readdirSync("posts")
@@ -43,6 +44,9 @@
             </Head>
             <Header />
             <article className="prose dark:prose-invert prose-lg prose-a:var(--theme) max-w-none article-border" dangerouslySetInnerHTML={{__html: contentString}}/>
+            <div style={{marginBottom: "20px"}}>
+                <RSSComponent/>
+            </div>
         </div>
     }
 
