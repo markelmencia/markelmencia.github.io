@@ -48,6 +48,11 @@ export default function Home({recent_posts}) {
     <main>
       <Head>
         <title>Home - Markel Mencía</title>
+        <meta property="og:title" content="Markel Mencía"/>
+        <meta property="og:description" content="Computer Engineering undergraduate interested in system-level development and cybersecurity"/>
+        <meta property="og:type" content="website"/>
+        <meta property="og:url" content="https://markelmencia.github.io"/>
+        <meta property="og:image" content="https://markelmencia.github.io/img/logo.png"/>
       </Head>
       <Header/>
       <div className="info">
