@@ -42,6 +42,11 @@ function Blogs({posts}) {
     return <div>
         <Head>
           <title>Blog - Markel Mencía</title>
+          <meta property="og:title" content="Blog - Markel Mencía"/>
+          <meta property="og:description" content="The blogs I've written over the years, about both Computer Science and other non-related topics."/>
+          <meta property="og:type" content="website"/>
+          <meta property="og:url" content="https://markelmencia.github.io/blog"/>
+          <meta property="og:image" content="https://markelmencia.github.io/img/logo.png"/>
         </Head>
         <Header/>
         <h1 className="page-title">Blogs</h1>

@@ -28,7 +28,7 @@ export async function getStaticProps() {
   }
 }
 
-function Blogs({posts}) {
+function Writeups({posts}) {
     const [query, setQuery] = useState("")
 
     const filteredPosts = posts.filter((post) => {
@@ -41,7 +41,12 @@ function Blogs({posts}) {
 
     return <div>
         <Head>
-          <title>Blog - Markel Mencía</title>
+          <title>Writeups - Markel Mencía</title>
+          <meta property="og:title" content="Writeups - Markel Mencía"/>
+          <meta property="og:description" content="The writeups I've written on challenges in different CTFs"/>
+          <meta property="og:type" content="website"/>
+          <meta property="og:url" content="https://markelmencia.github.io/writeups"/>
+          <meta property="og:image" content="https://markelmencia.github.io/img/logo.png"/>
         </Head>
         <Header/>
         <h1 className="page-title">Writeups</h1>
@@ -59,4 +64,4 @@ function Blogs({posts}) {
       </div>
 }
 
-export default Blogs
+export default Writeups
