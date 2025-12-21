@@ -6,6 +6,8 @@ description: "Buffer overflows are one of the most common types of exploits ever
 
 # How to perform a simple buffer overflow
 
+#### December 18, 2025
+
 Buffer Overflow attacks are one of the most common types of attacks, and it has been so for the last decade. Unfortunately, they tend to be quite powerful, granting in some cases full system control to the attacker due to how close to the bare-metal these attacks tend to be performed on. BOFs have been in the cybersecurity scene for decades, giving headaches to security experts and full-on companies alike. And even if language compilers have worked to prevent these attacks and many tools have been developed to detect related issues, buffer overflows are definitely still a thing of the present.
 
 Knowing how these vulnerabilities are created, or at least understanding their roots is knowledge that might be quite useful for any developer, even if they are not specialized in the cybersecurity space.

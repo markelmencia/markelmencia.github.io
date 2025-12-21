@@ -9,18 +9,30 @@ import RSSComponent from "@/components/RSSComponent";
 
 
 export async function getStaticProps() {
-  const files = fs.readdirSync("posts")
-  const posts = files.map((filename) => {
+  const blogFiles = fs.readdirSync("posts")
+  const blogs = blogFiles.map((filename) => {
     const slug = filename.replace(".md", "")
     const readFiles = fs.readFileSync(`posts/${filename}`)
     const {data: frontMatter} = matter(readFiles)
     
     return {
-      slug, frontMatter
+      slug, frontMatter, type: "blog"
     }
   })
 
-  const sorted = posts.sort((a, b) => {
+  const writeupFiles = fs.readdirSync("writeups")
+  const writeups = writeupFiles.map((filename) => {
+    const slug = filename.replace(".md", "")
+    const readFiles = fs.readFileSync(`writeups/${filename}`, "utf-8")
+    const {data: frontMatter} = matter(readFiles)
+    return {
+      slug, frontMatter, type: "writeups"
+    }
+  })
+
+  const allPosts = [...blogs, ...writeups]
+
+  const sorted = allPosts.sort((a, b) => {
     return new Date(b.frontMatter.date) - new Date(a.frontMatter.date)
   })
 
@@ -52,7 +64,7 @@ export default function Home({recent_posts}) {
       <RSSComponent/>
       {recent_posts.map((post) => {
                   return (
-                    <PostDescription key={post.slug} title={post.frontMatter.title} date={post.frontMatter.date} slug={post.slug} desc={post.frontMatter.description}
+                    <PostDescription key={post.slug} title={post.frontMatter.title} date={post.frontMatter.date} slug={post.slug} desc={post.frontMatter.description} type={post.type}
                     />
                   )
                 })}

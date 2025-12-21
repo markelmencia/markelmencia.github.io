@@ -12,9 +12,9 @@ const feed = new RSS({
   language: 'en',
 })
 
-  const files = fs.readdirSync('posts')
-  const posts = await Promise.all(
-    files.map(async (filename) => {
+  const blogFiles = fs.readdirSync('posts')
+  const blogs = await Promise.all(
+    blogFiles.map(async (filename) => {
       const slug = filename.replace('.md', '')
       const readFiles = fs.readFileSync(`posts/${filename}`, 'utf-8')
       const { data: frontMatter, content } = matter(readFiles)
@@ -22,11 +22,27 @@ const feed = new RSS({
       const processedContent = await remark().use(remarkHtml).process(content)
       const htmlContent = processedContent.toString()
       
-      return { slug, frontMatter, htmlContent }
+      return {slug, frontMatter, htmlContent, type: "blog"}
     })
   )
 
-const sortedPosts = posts.sort((a, b) => {
+  const writeupFiles = fs.readdirSync('writeups')
+  const writeups = await Promise.all(
+    writeupFiles.map(async (filename) => {
+      const slug = filename.replace('.md', '')
+      const readFiles = fs.readFileSync(`writeups/${filename}`, 'utf-8')
+      const { data: frontMatter, content } = matter(readFiles)
+      
+      const processedContent = await remark().use(remarkHtml).process(content)
+      const htmlContent = processedContent.toString()
+      
+      return {slug, frontMatter, htmlContent, type: "writeups"}
+    })
+  )
+
+  const allPosts = [...blogs, ...writeups]
+
+  const sortedPosts = allPosts.sort((a, b) => {
   return new Date(b.frontMatter.date) - new Date(a.frontMatter.date)
 })
 
@@ -34,7 +50,7 @@ sortedPosts.forEach((post) => {
   feed.item({
     title: post.frontMatter.title,
     description: post.htmlContent,
-    url: `https://markelmencia.github.io/blog/${post.slug}`,
+    url: `https://markelmencia.github.io/${post.type}/${post.slug}`,
     date: post.frontMatter.date,
   })
 })
