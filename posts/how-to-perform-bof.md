@@ -264,7 +264,7 @@ pwndbg> rop
 ...
 ```
 
-`rop` will print quite a few useful addresses we might need for other programs, but for this one we just need one that has "ret" on it. Let's write this address too. Now we are ready to build the exploit string.
+`rop` will print quite a few useful addresses we might need for other programs called "gadgets", but for this one we just need one that has "ret" on it. Let's write this address too. Now we are ready to build the exploit string.
 
 ## Creating the exploit string
 We'll use pwntools for this, and a simple python script:

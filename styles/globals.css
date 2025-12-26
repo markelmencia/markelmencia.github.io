@@ -326,6 +326,10 @@ p {
   color: var(--foreground);
 }
 
+.prose ol li  {
+  font-family: "Inter";
+}
+
 .prose p code, .prose li code {
   background-color: var(--background-lighter);
   border-radius: 5px;
