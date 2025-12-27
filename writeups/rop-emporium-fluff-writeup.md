@@ -164,11 +164,11 @@ rbx_offset = -0x3ef2 + i - 11
 But there's more! We have to consider the next iterations! Once we store in `al` the first byte of `flag.txt`  (the character `f`, 102 in ASCII), we'll have to subtract `102` from the offset, not `11`. And we'll have to consider the next iterations as well! Let's take this into account in code:
 
 ```
-FLAG_TEXT = ['f', 'l', 'a', 'g', '.', 't', 'x', 't']
+FLAG_TEXT = "flag.txt"
 al_offset = 11 # Initial value of al
 
 rbx_offset = -0x3ef2 + i - al_offset
-al_offset = ord[flag_text[i]] # Gets the ASCII value of the character
+al_offset = ord(FLAG_TEXT[i]) # Gets the ASCII value of the character
 ```
 
 Pwning is hard.
@@ -191,7 +191,7 @@ POP_RDI_GADGET_ADDRESS = 0x004006a3
 PRINT_FILE_FUNCTION_ADDRESS = 0x400510
 BSS_ADDRESS = 0x0000000000601038
 
-FLAG_TEXT = ['f', 'l', 'a', 'g', '.', 't', 'x', 't']
+FLAG_TEXT = "flag.txt"
 al_offset = 11
 ```
 
@@ -290,7 +290,7 @@ POP_RDI_GADGET_ADDRESS = 0x004006a3
 PRINT_FILE_FUNCTION_ADDRESS = 0x400510
 BSS_ADDRESS = 0x0000000000601038
 
-FLAG_TEXT = ['f', 'l', 'a', 'g', '.', 't', 'x', 't']
+FLAG_TEXT = "flag.txt"
 al_offset = 11
 
 
