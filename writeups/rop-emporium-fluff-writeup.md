@@ -10,7 +10,7 @@ description: "Writeup for the Roulette fluff challenge of the x86-64 ROP Emporiu
 
 Brace yourself for this one; although conceptually this challenge is nothing new, we'll have to get creative.
 
-The description tells us that this challenge is not very different from the [write4] challenge. We just need to call the `print_file` function in the binary with `flag.txt` as the argument. With all of this said, let's just jump right into it.
+The description tells us that this challenge is not very different from the [write4](/writeups/rop-emporium-write4-writeup) challenge. We just need to call the `print_file` function in the binary with `flag.txt` as the argument. With all of this said, let's just jump right into it.
 
 Let's start just like we've done until now, checking the functions in the binary:
 
@@ -319,7 +319,7 @@ This solution, if executed normally, will throw a segmentation fault before prin
 
 ```
 $ python3 exploit.py
-$ pwndbg fluff
+$ gdb fluff
 pwndbg> run < exploit
 fluff by ROP Emporium
 x86_64
