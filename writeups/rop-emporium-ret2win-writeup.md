@@ -130,7 +130,7 @@ This function seems to call `read()`, the function that reads our input. Neither
 With the pile of characters we'll plug in as input, we'll hopefully overflow the stack, overwriting its content. Part of its content is the return address of the function, that tells the CPU where to return once the function finishes its execution. If we manage to change that address to the initial address of `ret2win`, we'll manage to redirect the flow of the program to execute said function.
 
 ## The execution
-This presents one problem: how do we know where in the stack is the return address? Before building our exploit input, we have to find the **offset** of the return address. In other words, the number of characters we'll have to write *before* reaching the return address. We can achieve this in many different ways. In my case, I'll use cyclic patterns. I go over this process more in-depth in [my other article](blog/how-to-perform-bof), so be sure to read it if you don't understand what's going on.
+This presents one problem: how do we know where in the stack is the return address? Before building our exploit input, we have to find the **offset** of the return address. In other words, the number of characters we'll have to write *before* reaching the return address. We can achieve this in many different ways. In my case, I'll use cyclic patterns. I go over this process more in-depth in [my other article](/blog/how-to-perform-bof), so be sure to read it if you don't understand what's going on.
 
 ```
 pwndbg> cyclic 200 pat

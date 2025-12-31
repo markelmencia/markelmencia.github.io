@@ -8,9 +8,9 @@ description: "Writeup for the ret2csu challenge of the x86-64 ROP Emporium chall
 
 #### December 29, 2025
 
-We're in the home stretch! This is the last challenge of ROP Emporium. This challenge is not as unconventional as [the previous one](writeups/rop-emporium-pivot-writeup), but it will present some challenges.
+We're in the home stretch! This is the last challenge of ROP Emporium. This challenge is not as unconventional as [the previous one](rop-emporium-pivot-writeup), but it will present some challenges.
 
-The description says that this challenge is similar to the [callme](writeups/rop-emporium-callme-writeup) challenge. There's a `ret2win` function somewhere that we have to call with `0xdeadbeefdeadbeef`, `0xcafebabecafebabe` and `0xd00df00dd00df00d` as arguments. The catch is that the number of gadgets we have is very limited.
+The description says that this challenge is similar to the [callme](rop-emporium-callme-writeup) challenge. There's a `ret2win` function somewhere that we have to call with `0xdeadbeefdeadbeef`, `0xcafebabecafebabe` and `0xd00df00dd00df00d` as arguments. The catch is that the number of gadgets we have is very limited.
 
 However, with this challenge we'll learn a technique that will allow us to obtain useful gadgets in virtually every ELF binary. This technique has to do with the name of this challenge: ret2csu. This vulnerability actually has a lot to do with some of the concepts of the previous challenge: dynamic linking. Let's explain what is it about.
 

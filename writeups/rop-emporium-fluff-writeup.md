@@ -1,7 +1,7 @@
 ---
 title: "ROP Emporium x86-64 Challenge 6: fluff"
 date: "2025-12-26"
-description: "Writeup for the Roulette fluff challenge of the x86-64 ROP Emporium challenges."
+description: "Writeup for the fluff challenge of the x86-64 ROP Emporium challenges."
 ---
 
 # ROP Emporium x86-64 Challenge 6: fluff
@@ -10,7 +10,7 @@ description: "Writeup for the Roulette fluff challenge of the x86-64 ROP Emporiu
 
 Brace yourself for this one; although conceptually this challenge is nothing new, we'll have to get creative.
 
-The description tells us that this challenge is not very different from the [write4](/writeups/rop-emporium-write4-writeup) challenge. We just need to call the `print_file` function in the binary with `flag.txt` as the argument. With all of this said, let's just jump right into it.
+The description tells us that this challenge is not very different from the [write4](rop-emporium-write4-writeup) challenge. We just need to call the `print_file` function in the binary with `flag.txt` as the argument. With all of this said, let's just jump right into it.
 
 Let's start just like we've done until now, checking the functions in the binary:
 

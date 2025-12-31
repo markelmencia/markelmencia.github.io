@@ -8,7 +8,7 @@ description: "Writeup for the callme challenge of the x86-64 ROP Emporium challe
 
 #### December 26, 2025
 
-This challenge won't be very difficult if we are understood gadgets properly from [the last challenge](writeups/rop-emporium-split-writeup).  As the description says, for this challenge we'll need to call three functions in a specific order, with some specific arguments. These three functions are `callme_one`, `callme_two` and `callme_three`. The arguments for those three functions must be `0xdeadbeefdeadbeef`, `0xcafebabecafebabe` and `0xd00df00dd00df00d`.
+This challenge won't be very difficult if we are understood gadgets properly from [the last challenge](rop-emporium-split-writeup).  As the description says, for this challenge we'll need to call three functions in a specific order, with some specific arguments. These three functions are `callme_one`, `callme_two` and `callme_three`. The arguments for those three functions must be `0xdeadbeefdeadbeef`, `0xcafebabecafebabe` and `0xd00df00dd00df00d`.
 
 As we have done in every challenge, let's start by seeing what functions this binary has:
 
@@ -84,7 +84,7 @@ D00DF00D_ARGUMENT = 0xD00DF00DD00DF00D
 RETURN_GADGET = 0x004006be
 ```
 
-I obtained the offset the same way I did in the other two challenges, with a pattern search using `cyclic`. I go over this slightly in the writeups, and more in depth in my article about [how to perform a simple buffer overflow](blog/how-to-perform-bof). Feel free to read it if you got lost here.
+I obtained the offset the same way I did in the other two challenges, with a pattern search using `cyclic`. I go over this slightly in the writeups, and more in depth in my article about [how to perform a simple buffer overflow](/blog/how-to-perform-bof). Feel free to read it if you got lost here.
 
 After that, I just stored the `callme` function addresses we've obtained from `info functions`. Then, I also stored the gadget function address that I got when I disassembled `usefulGadgets`. I also wrote in the arguments we need to call the functions with, and in order to align the stack, I got a return gadget with `rop`. Let's build the payload!
 

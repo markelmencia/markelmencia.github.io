@@ -34,7 +34,7 @@ payload += p64(EXPLOIT_FUNCTION_ADDRESS)
 open("exploit", "bw").write(payload)
 ```
 
-In order to obtain the offset I performed the same procedure I did in [the last challenge](writeups/rop-emporium-ret2win-writeup), and it turns out that every challenge in ROP Emporium has the same offset. Again, I plug in a return instruction address before the actual call to `usefulFunction` to align the stack (also explained in the last writeup), and then I call `usefulFunction` . Let's see what this does:
+In order to obtain the offset I performed the same procedure I did in [the last challenge](rop-emporium-ret2win-writeup), and it turns out that every challenge in ROP Emporium has the same offset. Again, I plug in a return instruction address before the actual call to `usefulFunction` to align the stack (also explained in the last writeup), and then I call `usefulFunction` . Let's see what this does:
 
 ```
 $ python3 exploit.py

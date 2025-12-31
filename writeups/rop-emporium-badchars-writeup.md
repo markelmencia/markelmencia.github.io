@@ -20,7 +20,7 @@ badchars are: 'x', 'g', 'a', '.'
 
 Great, so we can't really write `flag.txt` anywhere... or can we?
 
-This challenge is a glorified version of the [previous challenge](writeups/rop-emporium-write4-writeup), write4. We'll need to call `print_file` with the argument `flag.txt`, just like in write4. The issue is that we won't be able to write that string directly, because as we can see, it contains badchars.
+This challenge is a glorified version of the [previous challenge](rop-emporium-write4-writeup), write4. We'll need to call `print_file` with the argument `flag.txt`, just like in write4. The issue is that we won't be able to write that string directly, because as we can see, it contains badchars.
 
 Our goal is to somehow avoid this restriction indirectly.  We'll see along the way. For now, let's see what we can work with:
 
