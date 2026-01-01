@@ -45,8 +45,8 @@ function Writeups({posts}) {
           <meta property="og:title" content="Writeups - Markel Mencía"/>
           <meta property="og:description" content="The writeups I've written on challenges in different CTFs."/>
           <meta property="og:type" content="website"/>
-          <meta property="og:url" content="https://markelmencia.github.io/writeups"/>
-          <meta property="og:image" content="https://markelmencia.github.io/img/logo.png"/>
+          <meta property="og:url" content="https://markelmencia.com/writeups"/>
+          <meta property="og:image" content="https://markelmencia.com/img/logo.png"/>
         </Head>
         <Header/>
         <h1 className="page-title">Writeups</h1>

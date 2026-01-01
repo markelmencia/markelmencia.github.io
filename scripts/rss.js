@@ -7,8 +7,8 @@ import remarkHtml from 'remark-html'
 const feed = new RSS({
   title: "Markel Mencía's blog",
   description: "Markel's blog, mainly focused on Computer Science but also about other topics.",
-  site_url: 'https://markelmencia.github.io',
-  feed_url: 'https://markelmencia.github.io/rss.xml',
+  site_url: 'https://markelmencia.com',
+  feed_url: 'https://markelmencia.com/rss.xml',
   language: 'en',
 })
 
@@ -50,7 +50,7 @@ sortedPosts.forEach((post) => {
   feed.item({
     title: post.frontMatter.title,
     description: post.htmlContent,
-    url: `https://markelmencia.github.io/${post.type}/${post.slug}`,
+    url: `https://markelmencia.com/${post.type}/${post.slug}`,
     date: post.frontMatter.date,
   })
 })

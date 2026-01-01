@@ -44,8 +44,8 @@ import RSSComponent from "@/components/RSSComponent"
                 <meta property="og:title" content={`${frontMatter.title} - Markel Mencía`}/>
                 <meta property="og:description" content={`${frontMatter.description}`}/>
                 <meta property="og:type" content="website"/>
-                <meta property="og:url" content={`https://markelmencia.github.io/blog/${frontMatter.slug}`} />
-                <meta property="og:image" content="https://markelmencia.github.io/img/logo.png"/>
+                <meta property="og:url" content={`https://markelmencia.com/blog/${frontMatter.slug}`} />
+                <meta property="og:image" content="https://markelmencia.com/img/logo.png"/>
                 <meta property="article:published_time" content={frontMatter.date} />
             </Head>
             <Header />
