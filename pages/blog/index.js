@@ -49,7 +49,7 @@ function Blogs({posts}) {
           <meta property="og:image" content="https://markelmencia.com/img/logo.png"/>
         </Head>
         <Header/>
-        <h1 className="page-title">Blogs</h1>
+        <h1 className="page-title">Blog</h1>
         <input value={query} onChange={(e) => setQuery(e.target.value)} className="search-bar" type="text" placeholder="Search..."></input>
         {filteredPosts.length > 0 ? (
           filteredPosts.map((post) => {

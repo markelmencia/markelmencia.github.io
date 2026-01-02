@@ -302,5 +302,7 @@ Buffer Overflows are a key exercise in cybersecurity. With them being so common,
 
 One thing I haven't went over in this article is about how to avoid these vulnerabilities in our code. It turns out that at times it might not be as easy as it seems, but following some good practices is not hard, and it might save you some day. If knowing how to exploit them is important, knowing how to avoid them is much more than that! A professor I had liked to mention how code integrity shouldn't be a step in development, but a mindset throughout the whole process. Maybe the fact that this advice is ignored is precisely why these vulnerabilities are still happening so much.
 
+~ Markel
+
 
 
