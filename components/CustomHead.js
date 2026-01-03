@@ -6,7 +6,7 @@ export default function CustomHead({
   canonical = 'https://markelmencia.com',
   ogImage = 'https://markelmencia.com/img/logo.png',
   ogType = 'website',
-  twitterCard = 'summary_large_image',
+  twitterCard = 'summary',
   author = 'Markel Mencía',
   publishedTime,
 }) {
