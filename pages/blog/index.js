@@ -3,7 +3,8 @@ import matter from "gray-matter"
 import { useState } from "react"
 import Header from "@/components/Header"
 import PostDescription from "@/components/PostDescription"
-import Head from "next/head"
+import CustomHead from "@/components/CustomHead"
+import { PersonSchema } from "@/components/JSON-LD"
 
 export async function getStaticProps() {
   const files = fs.readdirSync("posts")
@@ -40,14 +41,12 @@ function Blogs({posts}) {
   })
 
     return <div>
-        <Head>
-          <title>Blog - Markel Mencía</title>
-          <meta property="og:title" content="Blog - Markel Mencía"/>
-          <meta property="og:description" content="The blogs I've written over the years, about both Computer Science and other non-related topics."/>
-          <meta property="og:type" content="website"/>
-          <meta property="og:url" content="https://markelmencia.com/blog"/>
-          <meta property="og:image" content="https://markelmencia.com/img/logo.png"/>
-        </Head>
+        <CustomHead
+          title="Blog"
+          description="The blogs I've written over the years, about both Computer Science and other non-related topics."
+          canonical="https://markelmencia.com/blog"
+        />
+        <PersonSchema/>
         <Header/>
         <h1 className="page-title">Blog</h1>
         <input value={query} onChange={(e) => setQuery(e.target.value)} className="search-bar" type="text" placeholder="Search..."></input>

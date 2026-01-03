@@ -1,14 +1,14 @@
-    import React from "react"
-    import fs from "fs"
-    import matter from "gray-matter"
-    import md from "markdown-it"
-    import Header from "@/components/Header"
-    import Head from "next/head"
-    import { remark } from 'remark'
-    import remarkRehype from 'remark-rehype'
-    import rehypePrism from 'rehype-prism-plus'
-    import rehypeStringify from 'rehype-stringify'
+import React from "react"
+import fs from "fs"
+import matter from "gray-matter"
+import Header from "@/components/Header"
+import CustomHead from "@/components/CustomHead"
+import { remark } from 'remark'
+import remarkRehype from 'remark-rehype'
+import rehypePrism from 'rehype-prism-plus'
+import rehypeStringify from 'rehype-stringify'
 import RSSComponent from "@/components/RSSComponent"
+import { ArticleSchema } from "@/components/JSON-LD"
 
     export async function getStaticPaths() {
         const files = fs.readdirSync("writeups")
@@ -39,15 +39,14 @@ import RSSComponent from "@/components/RSSComponent"
     function Writeup({frontMatter, contentString}) {
 
         return <div>
-            <Head>
-                <title>{`${frontMatter.title} - Markel Mencía`}</title>
-                <meta property="og:title" content={`${frontMatter.title} - Markel Mencía`}/>
-                <meta property="og:description" content={`${frontMatter.description}`}/>
-                <meta property="og:type" content="website"/>
-                <meta property="og:url" content={`https://markelmencia.com/writeups/${frontMatter.slug}`} />
-                <meta property="og:image" content="https://markelmencia.com/img/logo.png"/>
-                <meta property="article:published_time" content={frontMatter.date} />
-            </Head>
+            <CustomHead
+                title={frontMatter.title}
+                description={frontMatter.description}
+                canonical={`https://markelmencia.com/writeups/${frontMatter.slug}`}
+                ogType="article"
+                publishedTime={frontMatter.date}
+            />
+            <ArticleSchema />
             <Header />
             <article className="prose dark:prose-invert prose-lg prose-a:var(--theme) max-w-none article-border" dangerouslySetInnerHTML={{__html: contentString}}/>
             <div style={{marginBottom: "20px"}}>

@@ -1,10 +1,11 @@
 {
   "name": "markelmencia",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/rss.js && next build",
+    "build": "node scripts/rss.js && node scripts/sitemap.js && next build",
     "start": "next start",
     "lint": "eslint"
   },

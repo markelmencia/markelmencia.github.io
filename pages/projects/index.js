@@ -1,8 +1,9 @@
 import Header from "@/components/Header"
-import Head from "next/head"
+import CustomHead from "@/components/CustomHead"
 import fs from 'fs'
 import path from 'path'
 import Link from "next/link"
+import { PersonSchema } from "@/components/JSON-LD"
 
 export async function getStaticProps() {
   const projectsFile = path.join(process.cwd(), 'projects.json')
@@ -24,9 +25,12 @@ export async function getStaticProps() {
 export default function Projects({projects, wip}) {
   return (
     <main>
-      <Head>
-        <title>Projects - Markel Mencía</title>
-      </Head>
+      <CustomHead
+        title="Projects"
+        description="My Computer Science projects, both finished and in progress."
+        canonical="https://markelmencia.com/projects"
+      />
+      <PersonSchema/>
       <Header/>
         <h1 className="page-title">Projects</h1>
         <div className="project-grid">

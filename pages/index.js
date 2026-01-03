@@ -1,11 +1,12 @@
 import Header from "@/components/Header";
-import Head from "next/head"
 import Image from 'next/image'
 import Link from "next/link"
 import fs from "fs"
 import matter from "gray-matter"
 import PostDescription from "@/components/PostDescription";
 import RSSComponent from "@/components/RSSComponent";
+import CustomHead from "@/components/CustomHead"
+import { PersonSchema } from "@/components/JSON-LD"
 
 
 export async function getStaticProps() {
@@ -46,14 +47,8 @@ export async function getStaticProps() {
 export default function Home({recent_posts}) {
   return (
     <main>
-      <Head>
-        <title>Home - Markel Mencía</title>
-        <meta property="og:title" content="Markel Mencía"/>
-        <meta property="og:description" content="Computer Engineering undergraduate interested in system-level development and cybersecurity."/>
-        <meta property="og:type" content="website"/>
-        <meta property="og:url" content="https://markelmencia.com"/>
-        <meta property="og:image" content="https://markelmencia.com/img/logo.png"/>
-      </Head>
+      <CustomHead/>
+      <PersonSchema/>
       <Header/>
       <div className="info">
         <h1 className="name-title"><span className="hello">Hello! </span> I'm Markel</h1>
@@ -69,8 +64,7 @@ export default function Home({recent_posts}) {
       <RSSComponent/>
       {recent_posts.map((post) => {
                   return (
-                    <PostDescription key={post.slug} title={post.frontMatter.title} date={post.frontMatter.date} slug={post.slug} desc={post.frontMatter.description} type={post.type}
-                    />
+                    <PostDescription key={post.slug} title={post.frontMatter.title} date={post.frontMatter.date} slug={post.slug} desc={post.frontMatter.description} type={post.type}/>
                   )
                 })}
     </main>
