@@ -233,7 +233,7 @@ Now that the encoded flag is stored in memory, all we need is to decode it with 
 
 Take a look at the registers. There's a "b" in `r14`. This is actually a bit of an issue, because that "b" means that the instruction will only read one byte from the instruction. So instead of decoding with the key `0xFEFEFEFEFEFEFEFE`, it will decode it with `0xFE`. This means that it will only decode one character out of the eight in `flag.txt`. That's a bummer.
 
-However, to our benefit, this has a fix. We can just iterate over every byte in `.bss` where `flag.txt` is stored. Ffoor every character, we'll perform the XOR operation, byte by byte. Once the for loop is done, the whole string will be decoded, and `flag.txt` will sit inside `.bss`. Let's see how we can do this:
+However, to our benefit, this has a fix. We can just iterate over every byte in `.bss` where `flag.txt` is stored. For every character, we'll perform the XOR operation, byte by byte. Once the for loop is done, the whole string will be decoded, and `flag.txt` will sit inside `.bss`. Let's see how we can do this:
 
 ```
 for i in range(8): # Length of "flag.txt"

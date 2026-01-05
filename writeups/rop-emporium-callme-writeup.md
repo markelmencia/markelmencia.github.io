@@ -63,7 +63,7 @@ Disassembling `usefulGadgets` hints it as well, and also gives us a gadget we ca
    0x000000000040093f <+3>:	ret
 ```
 
-Good! Now we know how the `callme` functions are called, and we also have a gadget that allows us to move arbitrary values to the argument registers. All we need to do know is build the buffer overflow and then jump to the gadget for every function call, pop the argument values into the registers (`0xdeadbeefdeadbeef`, `0xcafebabecafebabe` and `0xd00df00dd00df00d` to `rdi`, `rsi` and `rdx` respectively) and then call the `callme` functions ourselves (we know their addresses from the `info functions` command).
+Good! Now we know how the `callme` functions are called, and we also have a gadget that allows us to move arbitrary values to the argument registers. All we need to do now is build the buffer overflow and then jump to the gadget for every function call, pop the argument values into the registers (`0xdeadbeefdeadbeef`, `0xcafebabecafebabe` and `0xd00df00dd00df00d` to `rdi`, `rsi` and `rdx` respectively) and then call the `callme` functions ourselves (we know their addresses from the `info functions` command).
 
 First, let's define some variables with addresses in a Python script with pwntools:
 
