@@ -4,7 +4,7 @@
         <description><![CDATA[Markel's blog, mainly focused on Computer Science but also about other topics.]]></description>
         <link>https://markelmencia.com</link>
         <generator>RSS for Node</generator>
-        <lastBuildDate>Sun, 04 Jan 2026 14:32:19 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 12 Jan 2026 17:27:19 GMT</lastBuildDate>
         <atom:link href="https://markelmencia.com/rss.xml" rel="self" type="application/rss+xml"/>
         <language><![CDATA[en]]></language>
         <item>
@@ -788,7 +788,7 @@ payload += p64(MOV_R12_TO_R13_GADGET_ADDRESS)
 0x000000000040062b &#x3C;+3>:	ret
 </code></pre>
 <p>Take a look at the registers. There's a "b" in <code>r14</code>. This is actually a bit of an issue, because that "b" means that the instruction will only read one byte from the instruction. So instead of decoding with the key <code>0xFEFEFEFEFEFEFEFE</code>, it will decode it with <code>0xFE</code>. This means that it will only decode one character out of the eight in <code>flag.txt</code>. That's a bummer.</p>
-<p>However, to our benefit, this has a fix. We can just iterate over every byte in <code>.bss</code> where <code>flag.txt</code> is stored. Ffoor every character, we'll perform the XOR operation, byte by byte. Once the for loop is done, the whole string will be decoded, and <code>flag.txt</code> will sit inside <code>.bss</code>. Let's see how we can do this:</p>
+<p>However, to our benefit, this has a fix. We can just iterate over every byte in <code>.bss</code> where <code>flag.txt</code> is stored. For every character, we'll perform the XOR operation, byte by byte. Once the for loop is done, the whole string will be decoded, and <code>flag.txt</code> will sit inside <code>.bss</code>. Let's see how we can do this:</p>
 <pre><code>for i in range(8): # Length of "flag.txt"
 	payload += p64(POP_R15_GADGET_ADDRESS)
 	payload += p64(BSS_ADDRESS + i)
@@ -1087,7 +1087,7 @@ Segmentation fault
    0x000000000040093e &#x3C;+2>:	pop    rdx
    0x000000000040093f &#x3C;+3>:	ret
 </code></pre>
-<p>Good! Now we know how the <code>callme</code> functions are called, and we also have a gadget that allows us to move arbitrary values to the argument registers. All we need to do know is build the buffer overflow and then jump to the gadget for every function call, pop the argument values into the registers (<code>0xdeadbeefdeadbeef</code>, <code>0xcafebabecafebabe</code> and <code>0xd00df00dd00df00d</code> to <code>rdi</code>, <code>rsi</code> and <code>rdx</code> respectively) and then call the <code>callme</code> functions ourselves (we know their addresses from the <code>info functions</code> command).</p>
+<p>Good! Now we know how the <code>callme</code> functions are called, and we also have a gadget that allows us to move arbitrary values to the argument registers. All we need to do now is build the buffer overflow and then jump to the gadget for every function call, pop the argument values into the registers (<code>0xdeadbeefdeadbeef</code>, <code>0xcafebabecafebabe</code> and <code>0xd00df00dd00df00d</code> to <code>rdi</code>, <code>rsi</code> and <code>rdx</code> respectively) and then call the <code>callme</code> functions ourselves (we know their addresses from the <code>info functions</code> command).</p>
 <p>First, let's define some variables with addresses in a Python script with pwntools:</p>
 <pre><code>from pwn import *
 
