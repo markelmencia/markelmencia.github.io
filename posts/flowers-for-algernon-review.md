@@ -21,7 +21,7 @@ Our protagonist is Charlie Gordon, a grown adult with an abnormally low IQ that 
 
 After the surgery, it didn't take look for Charlie to become much smarter, even surpassing the expectations of the doctors by far. The plot is told to us by the reports Charlie himself wrote, even before the surgery, with which the evolution of his awareness can be appreciated. We get to see what he learns, the relationships he develops with the doctors, peers and other people in his circle, and how he adapts to this new perspective he has acquired.
 
-Charlie achieves exactly what he wanted, becoming a genius in a matter of weeks, even leaving behind the intelligence of the very doctors that were researching him. He participates in conventions, learns multiple languages, and even learns about psychology, the science that made him was he was.
+Charlie achieves exactly what he wanted, becoming a genius in a matter of weeks, even leaving behind the intelligence of the very doctors that were researching him. He participates in conventions, learns multiple languages, and even learns about psychology, the science that made him what he was.
 
 However, with his intelligence, something else came back: his memories. Slowly, Charlie starts having reminiscences about his past, and realizes that he lived in a toxic and abusive family environment, and that the people that he once considered friends were just laughing at his lower intelligence, day after day. This torments him and makes him commit erratic decisions. We realize how his heart could not keep up with the speed his brain was developing at.
 
